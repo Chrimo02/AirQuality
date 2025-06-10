@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <Adafruit_NeoPixel.h>
+#include <ArduinoJson.h>
 
 // Konfiguration Wlan und mqtt
 const char* ssid       = "wifissid"; //TODO: Wie können wir das im THWS Wlan machen? (oder gibt es die Möglichkeit bei der Messe einen kleinen Router für das Projekt zu verwenden?)
@@ -85,9 +86,23 @@ void setColor(uint8_t r, uint8_t g, uint8_t b) {
   }
   strip.show();
 }
-//TODO: Anzahl der Abstufungen ggf erweitern und farben anpassen
+
 // MQTT-Nachrichten-Callback
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  // JSON dokument anlegen
+  StaticJsonDocument<256> doc;
+  DeserializationError err = deserializeJson(doc, payload, length);
+  if (!err && doc.containsKey("r") && doc.containsKey("g") && doc.containsKey("b")) {
+    // Werte aus JSON auslesen
+    uint8_t r = doc["r"];
+    uint8_t g = doc["g"];
+    uint8_t b = doc["b"];
+    uint16_t steps   = doc["steps"] | fadeSteps;
+    uint16_t delayMs = doc["delayMs"]| fadeInterval;
+    setColorSmooth(r, g, b, steps, delayMs);
+    return;
+  }
+  // Fallback auf einfache String-Befehle
   String msg;
   for (unsigned int i = 0; i < length; i++) {
     msg += (char)payload[i];
@@ -95,16 +110,13 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   msg.trim();
 
   if (msg == "gut") {
-    setColorSmooth(0, 255, 0);   // Grün
-  }
-  else if (msg == "mittel") {
-    setColorSmooth(255, 255, 0); // Gelb
-  }
-  else if (msg == "schlecht") {
-    setColorSmooth(255, 0, 0);   // Rot
-  }
-  else {
-    setColorSmooth(0, 0, 0);     // Aus
+    setColorSmooth(0, 255, 0);
+  } else if (msg == "mittel") {
+    setColorSmooth(255, 255, 0);
+  } else if (msg == "schlecht") {
+    setColorSmooth(255, 0, 0);
+  } else {
+    setColorSmooth(0, 0, 0);
   }
 }
 
