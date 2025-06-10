@@ -29,6 +29,10 @@ unsigned long fadeInterval = 20;  // ms pro Schritt
 unsigned long lastFadeTime = 0;
 bool fading = false;
 
+// Exponentieller Backoff für MQTT-Reconnect
+unsigned long reconnectDelay = 2000;          // Startdelay in ms
+const unsigned long maxReconnectDelay = 60000; // Max. Delay 60s
+
 // Setup non-blocking Fade
 void setColorSmooth(uint8_t r, uint8_t g, uint8_t b, uint16_t steps = 50, uint16_t interval = 20) {
   startR = currentR;
@@ -105,15 +109,20 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 }
 
 
-// Verbindung zum MQTT-Broker herstellen
+// MQTT-Verbindung aufbauen mit exponentiellem Backoff
 void connectMqtt() {
   while (!mqttClient.connected()) {
+    Serial.printf("MQTT: Versuche Verbindung, Delay: %lums...\n", reconnectDelay);
     if (mqttClient.connect("ESP32_NeoPixel_Client")) {
       mqttClient.subscribe(mqttTopic);
       Serial.println("MQTT verbunden & Topic abonniert");
+      reconnectDelay = 2000; // zurücksetzen auf Startwert
+      break;
     } else {
-      Serial.print("MQTT: Verbindungsversuch fehlgeschlagen, warte 2 s...");
-      delay(2000);
+      Serial.printf("MQTT: Verbindungsversuch fehlgeschlagen, warte %lums\n", reconnectDelay);
+      delay(reconnectDelay);
+      // Exponentiell erhöhen, maximal bis maxReconnectDelay
+      reconnectDelay = min(reconnectDelay * 2, maxReconnectDelay);
     }
   }
 }
