@@ -18,40 +18,69 @@ Adafruit_NeoPixel strip(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 WiFiClient   wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-// Funktion zum setzen der Farben an den Leds
-void setColor(uint8_t r, uint8_t g, uint8_t b) {
+
+// Aktuelle und Ziel-Farben für non-blocking Fade
+uint8_t currentR = 0, currentG = 0, currentB = 0;
+uint8_t startR, startG, startB;
+uint8_t targetR, targetG, targetB;
+uint16_t fadeSteps = 50;
+uint16_t currentStep = 0;
+unsigned long fadeInterval = 20;  // ms pro Schritt
+unsigned long lastFadeTime = 0;
+bool fading = false;
+
+// Setup non-blocking Fade
+void setColorSmooth(uint8_t r, uint8_t g, uint8_t b, uint16_t steps = 50, uint16_t interval = 20) {
+  startR = currentR;
+  startG = currentG;
+  startB = currentB;
+  targetR = r;
+  targetG = g;
+  targetB = b;
+  fadeSteps = steps;
+  fadeInterval = interval;
+  currentStep = 0;
+  lastFadeTime = millis();
+  fading = true;
+}
+
+// Verarbeitet Fade-Schritte ohne delay()
+void handleFade() {
+  if (!fading) return;
+  unsigned long now = millis();
+  if (now - lastFadeTime < fadeInterval) return;
+  lastFadeTime = now;
+  currentStep++;
+  if (currentStep > fadeSteps) {
+    // Fade beendet
+    currentR = targetR;
+    currentG = targetG;
+    currentB = targetB;
+    fading = false;
+    return;
+  }
+  // Interpolation
+  float fraction = (float)currentStep / fadeSteps;
+  uint8_t r = startR + (targetR - startR) * fraction;
+  uint8_t g = startG + (targetG - startG) * fraction;
+  uint8_t b = startB + (targetB - startB) * fraction;
+  // LEDs aktualisieren
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, strip.Color(r, g, b));
   }
   strip.show();
 }
 
-// dummy Variablen um die aktuelle Farbe zwischenspeichern zu können
-uint8_t currentR = 0, currentG = 0, currentB = 0;
-
-// die Funktion sorgt dafür, dass der übergang zwischen den Farbstufen smooth erfolgt und die dummyvariablen aktualisiert werden
-void setColorSmooth(uint8_t targetR, uint8_t targetG, uint8_t targetB, uint16_t steps = 50, uint16_t delayMs = 20) {
-  float stepR = (targetR - currentR) / (float)steps;
-  float stepG = (targetG - currentG) / (float)steps;
-  float stepB = (targetB - currentB) / (float)steps;
-
-  for (uint16_t i = 0; i <= steps; i++) {
-    uint8_t r = currentR + stepR * i;
-    uint8_t g = currentG + stepG * i;
-    uint8_t b = currentB + stepB * i;
-
-    for (uint16_t j = 0; j < strip.numPixels(); j++) {
-      strip.setPixelColor(j, strip.Color(r, g, b));
-    }
-    strip.show();
-    delay(delayMs);
+// Direkter Farbsatz (sofort)
+void setColor(uint8_t r, uint8_t g, uint8_t b) {
+  currentR = r;
+  currentG = g;
+  currentB = b;
+  for (uint16_t i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, strip.Color(r, g, b));
   }
-
-  currentR = targetR;
-  currentG = targetG;
-  currentB = targetB;
+  strip.show();
 }
-
 //TODO: Anzahl der Abstufungen ggf erweitern und farben anpassen
 // MQTT-Nachrichten-Callback
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -112,6 +141,8 @@ void setup() {
 }
 
 void loop() {
+  // Fade-Schritte verarbeiten
+  handleFade();
   // mqtt-Verbindung aufrechterhalten
   if (!mqttClient.connected()) {
     connectMqtt();
