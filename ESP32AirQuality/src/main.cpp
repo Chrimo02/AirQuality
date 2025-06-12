@@ -11,6 +11,24 @@ PubSubClient mqttClient(wifiClient);
 MqttManager  mqttMgr(mqttClient);
 LedController leds(LED_PIN, NUMPIXELS);
 
+enum AirQualityLevel {
+  AQ_GUT,
+  AQ_MITTEL,
+  AQ_SCHLECHT,
+  AQ_UNBEKANNT
+};
+
+AirQualityLevel parseAirQuality(const String& msg) {
+  if (msg == "gut") {
+    return AQ_GUT;
+  } else if (msg == "mittel") {
+    return AQ_MITTEL;
+  } else if (msg == "schlecht") {
+    return AQ_SCHLECHT;
+  }
+  return AQ_UNBEKANNT; // Fallback
+}
+
 void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int length) {
   StaticJsonDocument<256> doc;
   DeserializationError err = deserializeJson(doc, payload, length);
@@ -30,14 +48,20 @@ void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int lengt
   }
   msg.trim();
 
-  if (msg == "gut") {
-    leds.setColorSmooth(0, 255, 0);
-  } else if (msg == "mittel") {
-    leds.setColorSmooth(255, 255, 0);
-  } else if (msg == "schlecht") {
-    leds.setColorSmooth(255, 0, 0);
-  } else {
-    leds.setColorSmooth(0, 0, 0);
+  AirQualityLevel level = parseAirQuality(msg);
+  switch (level) {
+    case AQ_GUT:
+      leds.setColorSmooth(0, 255, 0); // grün
+      break;
+    case AQ_MITTEL:
+      leds.setColorSmooth(255, 255, 0); // gelb
+      break;
+    case AQ_SCHLECHT:
+      leds.setColorSmooth(255, 0, 0); // rot
+      break;
+    default:
+      leds.setColorSmooth(128, 128, 128); // grau für unbekannt
+      break;
   }
 }
 
