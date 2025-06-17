@@ -1,131 +1,89 @@
-# sensor_read.py
-
+# sensorik/sensor_read.py
+#!/usr/bin/env python3
 import serial
 import time
 from datetime import datetime
-import sqlite3
 
-# Path zur SQLite-DB und Logfile
-DB_FILE   = 'air_quality.db'
-LOG_FILE  = 'ips7100_data.log'
+from sensorik.db_helper import init_db, start_session, end_session
+
+LOG_FILE    = 'ips7100_data.log'
 SERIAL_PORT = '/dev/ttyUSB0'
 BAUDRATE    = 115200
 
 def init_serial_connection():
+    """
+    Öffnet die serielle Schnittstelle zum Sensor.
+    """
     try:
         ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=2)
-        print(f"[INFO] Verbindung zu {SERIAL_PORT} hergestellt.")
+        print(f"[INFO] Serielle Verbindung zu {SERIAL_PORT} hergestellt.")
         return ser
     except serial.SerialException as e:
         print(f"[ERROR] Kann Verbindung zu {SERIAL_PORT} nicht öffnen: {e}")
         return None
 
 def lese_daten(ser):
+    """
+    Liest eine einzelne Zeile vom Sensor, wenn Daten verfügbar sind.
+    """
     try:
         if ser.in_waiting:
-            zeile = ser.readline().decode('utf-8', errors='ignore').strip()
-            return zeile
+            return ser.readline().decode('utf-8', errors='ignore').strip()
     except Exception as e:
         print(f"[ERROR] Fehler beim Lesen: {e}")
+    time.sleep(1)
     return None
 
-# ---  Neuer Block: DB-Initialisierung & Einfügen  ---
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS air_data (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp   TEXT    NOT NULL,
-            pm1_0       REAL,
-            pm2_5       REAL,
-            pm10        REAL,
-            raw_line    TEXT
-        );
-    ''')
-    conn.commit()
-    return conn
-
-def insert_data(conn, raw_line):
+def insert_data(conn, raw_line, session_id):
     """
-    Extrahiert PM1.0, PM2.5 und PM10 aus raw_line und speichert sie in SQLite.
-    raw_line enthält z. B.:
-    "PC0.1,17605,PC0.3,7042,PC0.5,1722,PC1.0,10,PC2.5,0,PC5.0,0,PC10,0,
-     PM0.1,0.01611082,PM0.3,0.19010682,PM0.5,0.38713202,PM1.0,0.39689161,
-     PM2.5,0.39689161,PM5.0,0.39689161,PM10,0.39689161, …"
-
-    Wir suchen nach "PM1.0", "PM2.5" und "PM10" und nehmen jeweils das direkt folgende Element.
+    Speichert Basismesswerte (PM1.0, PM2.5, PM10) in der SQLite-DB.
     """
-
-    # 1) Teile die Zeile per Komma in Liste auf
     parts = raw_line.split(',')
 
-    # 2) Standardmäßig None, falls nicht gefunden
-    pm1_val   = None
-    pm2p5_val = None
-    pm10_val  = None
+    def get_val(key):
+        try:
+            idx = parts.index(key)
+            return float(parts[idx + 1])
+        except (ValueError, IndexError):
+            return None
 
-    # 3) Versuche, die Indizes von "PM1.0", "PM2.5" und "PM10" zu finden
-    try:
-        idx_pm1   = parts.index("PM1.0")
-        pm1_val   = float(parts[idx_pm1 + 1])
-    except (ValueError, IndexError):
-        pm1_val = None
+    pm1   = get_val('PM1.0')
+    pm2p5 = get_val('PM2.5')
+    pm10  = get_val('PM10')
 
-    try:
-        idx_pm2p5 = parts.index("PM2.5")
-        pm2p5_val = float(parts[idx_pm2p5 + 1])
-    except (ValueError, IndexError):
-        pm2p5_val = None
-
-    try:
-        idx_pm10  = parts.index("PM10")
-        pm10_val  = float(parts[idx_pm10 + 1])
-    except (ValueError, IndexError):
-        pm10_val = None
-
-    # 4) Zeitstempel erzeugen
-    timestamp = datetime.now().isoformat()
-
-    # 5) Einfügen in die Tabelle
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO air_data (timestamp, pm1_0, pm2_5, pm10, raw_line)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (timestamp, pm1_val, pm2p5_val, pm10_val, raw_line))
+    ts = datetime.now().isoformat()
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO air_data
+          (timestamp, pm1_0, pm2_5, pm10, raw_line, session_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (ts, pm1, pm2p5, pm10, raw_line, session_id))
     conn.commit()
-# --- Ende Neuer Block  ---
 
-def speichere_daten(daten):
-    timestamp = datetime.now().isoformat()
-    mit_zeit = f"{timestamp}, {daten}"
+def speichere_daten(raw_line):
+    """
+    Loggt die Rohzeile mit Zeitstempel in eine Datei.
+    """
+    ts = datetime.now().isoformat()
     with open(LOG_FILE, 'a') as f:
-        f.write(mit_zeit + '\n')
-    print(mit_zeit)
+        f.write(f"{ts}, {raw_line}\n")
+    print(f"{ts}, {raw_line}")
 
-def main():
-    ser = init_serial_connection()
-    if not ser:
-        return
+def parse_measurements(raw_line):
+    """
+    Parst verschiedene Sensorwerte und liefert ein dict zurück.
+    """
+    parts = raw_line.split(',')
+    def get_val(key):
+        try:
+            return float(parts[parts.index(key) + 1])
+        except (ValueError, IndexError):
+            return 0.0
 
-    # Datenbank-Verbindung aufbauen
-    conn = init_db()
-    print("[INFO] Beginne mit dem Lesen der Sensordaten. (Abbrechen mit Strg+C)")
-    try:
-        while True:
-            daten = lese_daten(ser)
-            if daten:
-                # 1) In Text-Logdatei speichern
-                speichere_daten(daten)
-                # 2) In SQLite-Tabelle einfügen
-                insert_data(conn, daten)
-                print(f"[DB] Eingetragen: {daten}")
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\n[INFO] Beendet durch Benutzer.")
-    finally:
-        ser.close()
-        conn.close()
-
-if __name__ == "__main__":
-    main()
+    return {
+        'PM2.5':  get_val('PM2.5'),
+        'CO2eq':  get_val('CO2eq'),
+        'VOCAQI': get_val('VOCAQI'),
+        'TEMP':   get_val('TEMP'),
+        'HUMID':  get_val('HUMID'),
+    }
