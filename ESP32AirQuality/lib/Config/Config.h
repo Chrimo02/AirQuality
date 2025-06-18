@@ -3,8 +3,8 @@
 #include <Arduino.h>
 
 // --- WLAN ---
-static constexpr char WIFI_SSID[]     = "KabelBox-3510";
-static constexpr char WIFI_PASSWORD[] = "22218125170237312940";
+static constexpr char WIFI_SSID[]     = "ssid";
+static constexpr char WIFI_PASSWORD[] = "pw";
 
 // --- MQTT ---
 static constexpr char MQTT_SERVER[]   = "192.168.0.13";
