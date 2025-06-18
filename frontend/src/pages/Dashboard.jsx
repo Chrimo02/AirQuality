@@ -1,29 +1,45 @@
-// src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import SensorDataCard from '../components/SensorDataCard';
-import ChartSection from '../components/ChartSection';
-import ControlPanel from '../components/ControlPanel';
-import { fetchLatestSensor, fetchSensorHistory, createWebSocket } from '../services/api';
+import SensorDataCard  from '../components/SensorDataCard';
+import ChartSection    from '../components/ChartSection';
+import ControlPanel    from '../components/ControlPanel';
+import {
+  fetchLatestSensor,
+  fetchSensorHistory,
+  createWebSocket
+} from '../services/api';
 
 export default function Dashboard() {
-  const [sensorData, setSensorData] = useState({ co2:0, temp:0, pm25:0, humidity:0 });
+  const [sensorData, setSensorData] = useState({
+    TEMP:      0,
+    HUMID:     0,
+    ATM:       0,
+    VOCAQI:    0,
+    bVOCeq:    0,
+    GASest:    0,
+    CO2eq:     0,
+    timestamp: ''
+  });
   const [historyData, setHistoryData] = useState([]);
 
-  // Initialdaten laden
   useEffect(() => {
     (async () => {
-      setSensorData(await fetchLatestSensor());
-      setHistoryData(await fetchSensorHistory());
+      try {
+        const latest  = await fetchLatestSensor();
+        const history = await fetchSensorHistory();
+        setSensorData(latest);
+        setHistoryData(history);
+      } catch (err) {
+        console.error('Fehler beim Laden der Sensordaten:', err);
+      }
     })();
   }, []);
 
-  // WebSocket für Live-Updates
   useEffect(() => {
     const ws = createWebSocket(newData => {
       setSensorData(newData);
       setHistoryData(prev => {
-        const arr = [...prev, newData];
-        return arr.length > 50 ? arr.slice(-50) : arr;
+        const next = [...prev, newData];
+        return next.length > 50 ? next.slice(-50) : next;
       });
     });
     return () => ws.close();
@@ -32,14 +48,15 @@ export default function Dashboard() {
   return (
     <div className="container">
       <div className="grid grid-3" style={{ marginBottom: '1rem' }}>
-        <SensorDataCard label="CO₂" value={sensorData.co2} unit="ppm" />
-        <SensorDataCard label="Temp." value={sensorData.temp} unit="°C" />
-        <SensorDataCard label="PM2.5" value={sensorData.pm25} unit="µg/m³" />
-        <SensorDataCard label="Feuchte" value={sensorData.humidity} unit="%" />
+        <SensorDataCard label="Temperatur"    value={sensorData.TEMP}    unit="°C"   timestamp={sensorData.timestamp} />
+        <SensorDataCard label="Feuchte"        value={sensorData.HUMID}   unit="%"    timestamp={sensorData.timestamp} />
+        <SensorDataCard label="Luftdruck"      value={sensorData.ATM}     unit="hPa"  timestamp={sensorData.timestamp} />
+        <SensorDataCard label="VOC-Index"      value={sensorData.VOCAQI}  unit=""     timestamp={sensorData.timestamp} />
+        <SensorDataCard label="bVOCeq"         value={sensorData.bVOCeq}  unit="ppm"  timestamp={sensorData.timestamp} />
+        <SensorDataCard label="GASest"         value={sensorData.GASest}  unit="ppm"  timestamp={sensorData.timestamp} />
+        <SensorDataCard label="CO₂-Äquivalent" value={sensorData.CO2eq}   unit="ppm"  timestamp={sensorData.timestamp} />
       </div>
-
       <ChartSection historyData={historyData} />
-
       <div style={{ marginTop: '2rem' }}>
         <ControlPanel />
       </div>
