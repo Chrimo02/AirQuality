@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import SensorDataCard  from '../components/SensorDataCard';
-import ChartSection    from '../components/ChartSection';
-import ControlPanel    from '../components/ControlPanel';
+import SensorDataCard from '../components/SensorDataCard';
+import ChartSection   from '../components/ChartSection';
+import ControlPanel   from '../components/ControlPanel';
 import {
   fetchLatestSensor,
   fetchSensorHistory,
@@ -21,6 +21,7 @@ export default function Dashboard() {
   });
   const [historyData, setHistoryData] = useState([]);
 
+  // Initial Load
   useEffect(() => {
     (async () => {
       try {
@@ -29,37 +30,62 @@ export default function Dashboard() {
         setSensorData(latest);
         setHistoryData(history);
       } catch (err) {
-        console.error('Fehler beim Laden der Sensordaten:', err);
+        console.error(err);
       }
     })();
   }, []);
 
+  // WebSocket Live
   useEffect(() => {
     const ws = createWebSocket(newData => {
       setSensorData(newData);
-      setHistoryData(prev => {
-        const next = [...prev, newData];
-        return next.length > 50 ? next.slice(-50) : next;
-      });
+      setHistoryData(prev => [...prev.slice(-49), newData]);
     });
     return () => ws.close();
   }, []);
 
+  const labels = [
+    'Temperatur',
+    'Feuchte',
+    'Luftdruck',
+    'VOC-Index',
+    'bVOCeq',
+    'GASest',
+    'CO₂-Äquivalent'
+  ];
+  const keyFor = l =>
+    l === 'CO₂-Äquivalent' ? 'CO2eq'
+    : l === 'VOC-Index'      ? 'VOCAQI'
+    : l;
+
   return (
-    <div className="container">
-      <div className="grid grid-3" style={{ marginBottom: '1rem' }}>
-        <SensorDataCard label="Temperatur"    value={sensorData.TEMP}    unit="°C"   timestamp={sensorData.timestamp} />
-        <SensorDataCard label="Feuchte"        value={sensorData.HUMID}   unit="%"    timestamp={sensorData.timestamp} />
-        <SensorDataCard label="Luftdruck"      value={sensorData.ATM}     unit="hPa"  timestamp={sensorData.timestamp} />
-        <SensorDataCard label="VOC-Index"      value={sensorData.VOCAQI}  unit=""     timestamp={sensorData.timestamp} />
-        <SensorDataCard label="bVOCeq"         value={sensorData.bVOCeq}  unit="ppm"  timestamp={sensorData.timestamp} />
-        <SensorDataCard label="GASest"         value={sensorData.GASest}  unit="ppm"  timestamp={sensorData.timestamp} />
-        <SensorDataCard label="CO₂-Äquivalent" value={sensorData.CO2eq}   unit="ppm"  timestamp={sensorData.timestamp} />
-      </div>
-      <ChartSection historyData={historyData} />
-      <div style={{ marginTop: '2rem' }}>
-        <ControlPanel />
-      </div>
-    </div>
+    <main className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Grid der Sensor-Karten */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-5">
+        {labels.map(label => (
+          <SensorDataCard
+            key={label}
+            label={label}
+            value={sensorData[keyFor(label)]}
+            unit={
+              label === 'Temperatur'   ? '°C' :
+              label === 'Feuchte'       ? '%'  :
+              label === 'Luftdruck'     ? 'hPa': 'ppm'
+            }
+            timestamp={sensorData.timestamp}
+          />
+        ))}
+      </section>
+
+      {/* Chart & Control */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ChartSection historyData={historyData} />
+        </div>
+        <div>
+          <ControlPanel />
+        </div>
+      </section>
+    </main>
   );
 }
