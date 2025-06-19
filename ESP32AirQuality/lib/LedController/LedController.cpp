@@ -1,4 +1,4 @@
-// LedController.cpp
+#include "FadeHelper.h"
 #include "LedController.h"
 #include "Config.h"
 
@@ -42,9 +42,10 @@ void LedController::handleFade() {
     _fading = false;
     return;
   }
-  float frac = float(_currentStep) / _fadeSteps;
-  uint8_t r = _startR + (_targetR - _startR) * frac;
-  uint8_t g = _startG + (_targetG - _startG) * frac;
-  uint8_t b = _startB + (_targetB - _startB) * frac;
-  setColor(r, g, b);
+
+  RGB start  = { _startR, _startG, _startB };
+  RGB target = { _targetR,_targetG,_targetB };
+  RGB cur    = interpolate(start, target, _currentStep, _fadeSteps);
+
+  setColor(cur.r, cur.g, cur.b);
 }
