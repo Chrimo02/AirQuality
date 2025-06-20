@@ -1,9 +1,13 @@
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import Client
+
 
 class MQTTClient:
-    def __init__(self, broker, port, topic, client_id="airquality-client"):
+    def __init__(self, broker, port, topic):
+        self.client = Client()
+        self.broker = broker
+        self.port = port
         self.topic = topic
-        self.client = mqtt.Client(client_id)
         self.client.connect(broker, port)
     
     def publish(self, message):

@@ -18,20 +18,21 @@ from tp100_controller import TP100Controller
 from aktorik.air_control_rules import AirControlRules
 from aktorik.air_quality_rating import SessionType
 from aktorik.air_quality_rating import air_quality_to_string
+from aktorik.air_quality_rating import AirQualityRules
 
 # MQTT-Client
 from mqtt_client import MQTTClient
 
 # Konfiguration für MQTT
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "172.20.10.4"
 MQTT_PORT = 1883
 MQTT_TOPIC = "airquality/command/led"
 
 # IPs und Tapo-Zugangsdaten
-VENTILATOR_IP = "192.168.1.100"
-DIFFUSOR_IP   = "192.168.1.101"
-TAPO_EMAIL    = "deine@email.de"
-TAPO_PASSWORD = "dein_passwort"
+VENTILATOR_IP = "172.20.10.5"
+DIFFUSOR_IP   = "172.20.10.6"
+TAPO_EMAIL    = "airqualitythws@gmail.com"
+TAPO_PASSWORD = "P20ro25g$"
 
 
 def parse_args():
@@ -66,6 +67,7 @@ def main():
     ventilator = TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
     diffusor   = TP100Controller(DIFFUSOR_IP,   TAPO_EMAIL, TAPO_PASSWORD)
     rules      = AirControlRules(SessionType.INDOOR)
+    ratings    = AirQualityRules(SessionType.INDOOR)
 
     # MQTT-Client initialisieren
     mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
@@ -86,7 +88,8 @@ def main():
             measurements = {k: meas[k] for k in ("PM2.5","CO2eq","VOCAQI","TEMP","HUMID") if k in meas}
 
             # Airquality-Stufe bestimmen
-            overall_quality = rules.get_overall_air_quality(measurements)
+            AirQualityRules 
+            overall_quality = ratings.get_overall_air_quality(measurements)
             overall_quality_str = air_quality_to_string(overall_quality)
 
             # MQTT-Nachricht senden
