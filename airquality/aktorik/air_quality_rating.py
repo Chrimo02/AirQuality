@@ -77,3 +77,12 @@ class AirQualityRules:
                 overall = rating
         return overall
 
+def air_quality_to_string(quality: AirQuality) -> str:
+    mapping = {
+        AirQuality.SEHR_GUT: "Sehr gut",
+        AirQuality.GUT: "Gut",
+        AirQuality.MÄSSIG: "Mäßig",
+        AirQuality.SCHLECHT: "Schlecht",
+        AirQuality.SEHR_SCHLECHT: "Sehr schlecht"
+    }
+    return mapping.get(quality, "Unbekannt")
