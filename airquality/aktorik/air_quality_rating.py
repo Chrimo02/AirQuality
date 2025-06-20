@@ -79,10 +79,10 @@ class AirQualityRules:
 
 def air_quality_to_string(quality: AirQuality) -> str:
     mapping = {
-        AirQuality.SEHR_GUT: "Sehr gut",
-        AirQuality.GUT: "Gut",
-        AirQuality.MÄSSIG: "Mäßig",
-        AirQuality.SCHLECHT: "Schlecht",
-        AirQuality.SEHR_SCHLECHT: "Sehr schlecht"
+        AirQuality.SEHR_GUT: "SEHR GUT",
+        AirQuality.GUT: "GUT",
+        AirQuality.MÄSSIG: "MAESSIG",
+        AirQuality.SCHLECHT: "SCHLECHT",
+        AirQuality.SEHR_SCHLECHT: "SEHR SCHLECHT"
     }
-    return mapping.get(quality, "Unbekannt")
+    return mapping.get(quality, "UNBEKANNT")

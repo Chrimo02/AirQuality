@@ -12,21 +12,31 @@ MqttManager  mqttMgr(mqttClient);
 LedController leds(LED_PIN, NUMPIXELS);
 
 enum AirQualityLevel {
+
+  AQ_SEHR_GUT,
   AQ_GUT,
-  AQ_MITTEL,
+  AQ_MAESSIG,
   AQ_SCHLECHT,
+  AQ_SEHR_SCHLECHT,
   AQ_UNBEKANNT
 };
 
 AirQualityLevel parseAirQuality(const String& msg) {
-  if (msg == "gut") {
+  String m = msg;
+  m.toUpperCase();
+  m.trim();
+  if (m == "SEHR GUT") {
+    return AQ_SEHR_GUT;
+  } else if (m == "GUT") {
     return AQ_GUT;
-  } else if (msg == "mittel") {
-    return AQ_MITTEL;
-  } else if (msg == "schlecht") {
+  } else if (m == "MÄSSIG" || m == "MAESSIG") {
+    return AQ_MAESSIG;
+  } else if (m == "SCHLECHT") {
     return AQ_SCHLECHT;
+  } else if (m == "SEHR SCHLECHT") {
+    return AQ_SEHR_SCHLECHT;
   }
-  return AQ_UNBEKANNT; // Fallback
+  return AQ_UNBEKANNT;
 }
 
 void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int length) {
@@ -50,13 +60,19 @@ void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int lengt
 
   AirQualityLevel level = parseAirQuality(msg);
   switch (level) {
+    case AQ_SEHR_GUT:
+      leds.setColorSmooth(0, 255, 64); // türkis-grün
+      break;
     case AQ_GUT:
       leds.setColorSmooth(0, 255, 0); // grün
       break;
-    case AQ_MITTEL:
+    case AQ_MAESSIG:
       leds.setColorSmooth(255, 255, 0); // gelb
       break;
     case AQ_SCHLECHT:
+      leds.setColorSmooth(255, 128, 0); // orange
+      break;
+    case AQ_SEHR_SCHLECHT:
       leds.setColorSmooth(255, 0, 0); // rot
       break;
     default:
