@@ -30,7 +30,7 @@ export default function Dashboard() {
         setSensorData(latest);
         setHistoryData(history);
       } catch (err) {
-        console.error(err);
+        console.error('Fehler beim Laden der Sensordaten:', err);
       }
     })();
   }, []);
@@ -53,38 +53,36 @@ export default function Dashboard() {
     'GASest',
     'CO₂-Äquivalent'
   ];
-  const keyFor = l =>
-    l === 'CO₂-Äquivalent' ? 'CO2eq'
-    : l === 'VOC-Index'      ? 'VOCAQI'
-    : l;
+  const keyFor = label =>
+    label === 'CO₂-Äquivalent' ? 'CO2eq'
+  : label === 'VOC-Index'      ? 'VOCAQI'
+  : label;
 
   return (
-    <main className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Grid der Sensor-Karten */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-5">
+    <main className="max-w-7xl mx-auto p-6 space-y-8">
+      {/* Sensor-Karten im CSS-Grid */}
+      <section className="sensor-grid">
         {labels.map(label => (
           <SensorDataCard
             key={label}
             label={label}
             value={sensorData[keyFor(label)]}
             unit={
-              label === 'Temperatur'   ? '°C' :
-              label === 'Feuchte'       ? '%'  :
-              label === 'Luftdruck'     ? 'hPa': 'ppm'
+              label === 'Temperatur' ? '°C' :
+              label === 'Feuchte'     ? '%'  :
+              label === 'Luftdruck'   ? 'hPa': 'ppm'
             }
             timestamp={sensorData.timestamp}
           />
         ))}
       </section>
 
-      {/* Chart & Control */}
+      {/* Verlauf und Steuerung */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ChartSection historyData={historyData} />
         </div>
-        <div>
-          <ControlPanel />
-        </div>
+        <ControlPanel />
       </section>
     </main>
   );

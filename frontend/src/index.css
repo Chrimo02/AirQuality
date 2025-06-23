@@ -1,4 +1,6 @@
-/* Entferne das alte Header-Design und ersetze es durch dieses: */
+/* src/index.css */
+
+/* ————— Header-Styles ————— */
 header {
   background-color: #ffffff;
   color: #333333;
@@ -9,11 +11,25 @@ header {
   top: 0;
   z-index: 10;
 }
-
-/* Optional: Haupttitel etwas größer und moderner */
 header h1 {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
+}
+
+/* ————— Sensor-Grid ————— */
+.sensor-grid {
+  display: grid;
+  /* Jede Karte mindestens 240px breit, so viele Spalten wie passen */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Optional: allgemeine Card-Basis */
+.card {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
