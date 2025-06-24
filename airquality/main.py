@@ -4,14 +4,9 @@ import time
 import argparse
 
 # Sensor- und DB-Funktionen
-from sensorik.sensor_read import (
-    init_serial_connection,
-    lese_daten,
-    speichere_daten,
-    insert_data,
-    parse_measurements
-)
-from sensorik.db_helper import init_db, start_session, end_session
+from sensorik.read_sensor_data import SensorReader
+from airquality.database.save_data import speichere_daten, insert_data
+from database.db_helper import init_db, start_session, end_session
 
 # Aktorik und Regeln
 from tp100_controller import TP100Controller
@@ -53,11 +48,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # serielle Schnittstelle und DB-Session initialisieren
-    ser = init_serial_connection()
-    if not ser:
-        return
+    canareei5Reader = SensorReader()
 
     conn       = init_db()
     session_id = start_session(conn, args.session, args.location)
@@ -75,7 +66,7 @@ def main():
     print(f"System gestartet für Session '{args.session}'")
     try:
         while True:
-            raw = lese_daten(ser)
+            raw = canareei5Reader.lese_daten()
             if not raw:
                 time.sleep(1)
                 continue
@@ -83,10 +74,8 @@ def main():
             speichere_daten(raw)
             insert_data(conn, raw, session_id)
 
-            meas = parse_measurements(raw)
-            # nur die interessierenden Keys extrahieren
-            measurements = {k: meas[k] for k in ("PM2.5","CO2eq","VOCAQI","TEMP","HUMID") if k in meas}
-
+            measurements = canareei5Reader.get_rating_measurements(raw)
+           
             # Airquality-Stufe bestimmen
             AirQualityRules 
             overall_quality = ratings.get_overall_air_quality(measurements)
@@ -122,7 +111,7 @@ def main():
     finally:
         end_session(conn, session_id)
         print(f"[SESSION] #{session_id} beendet.")
-        ser.close()
+        canareei5Reader.close()
         conn.close()
 
 if __name__ == "__main__":

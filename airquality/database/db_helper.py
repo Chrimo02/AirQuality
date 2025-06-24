@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 
 
-DB_FILE = 'air_quality.db'
+DB_FILE = 'database/air_quality.db'
 
 def init_db():
     """
