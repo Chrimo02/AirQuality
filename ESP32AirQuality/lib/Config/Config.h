@@ -3,11 +3,11 @@
 #include <Arduino.h>
 
 // --- WLAN ---
-static constexpr char WIFI_SSID[]     = "ssid";
-static constexpr char WIFI_PASSWORD[] = "pw";
+static constexpr char WIFI_SSID[]     = "Christians iPhone";
+static constexpr char WIFI_PASSWORD[] = "christian";
 
 // --- MQTT ---
-static constexpr char MQTT_SERVER[]   = "192.168.0.13";
+static constexpr char MQTT_SERVER[]   = "172.20.10.3";
 static constexpr uint16_t MQTT_PORT   = 1883;
 static constexpr char MQTT_TOPIC[]    = "airquality/command/led";
 

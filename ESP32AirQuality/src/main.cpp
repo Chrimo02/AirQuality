@@ -1,3 +1,4 @@
+// main.cpp
 #include "Config.h"
 #include "WiFiManager.h"
 #include "MqttManager.h"
@@ -5,14 +6,12 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-
 WiFiClient   wifiClient;
 PubSubClient mqttClient(wifiClient);
 MqttManager  mqttMgr(mqttClient);
 LedController leds(LED_PIN, NUMPIXELS);
 
 enum AirQualityLevel {
-
   AQ_SEHR_GUT,
   AQ_GUT,
   AQ_MAESSIG,
@@ -25,17 +24,11 @@ AirQualityLevel parseAirQuality(const String& msg) {
   String m = msg;
   m.toUpperCase();
   m.trim();
-  if (m == "SEHR GUT") {
-    return AQ_SEHR_GUT;
-  } else if (m == "GUT") {
-    return AQ_GUT;
-  } else if (m == "MÄSSIG" || m == "MAESSIG") {
-    return AQ_MAESSIG;
-  } else if (m == "SCHLECHT") {
-    return AQ_SCHLECHT;
-  } else if (m == "SEHR SCHLECHT") {
-    return AQ_SEHR_SCHLECHT;
-  }
+  if (m == "SEHR GUT") return AQ_SEHR_GUT;
+  if (m == "GUT")      return AQ_GUT;
+  if (m == "MÄSSIG" || m == "MAESSIG") return AQ_MAESSIG;
+  if (m == "SCHLECHT") return AQ_SCHLECHT;
+  if (m == "SEHR SCHLECHT") return AQ_SEHR_SCHLECHT;
   return AQ_UNBEKANNT;
 }
 
@@ -51,47 +44,48 @@ void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int lengt
     leds.setColorSmooth(r, g, b, steps, delayMs);
     return;
   }
-  // Fallback auf einfache String-Befehle
+
   String msg;
-  for (unsigned int i = 0; i < length; i++) {
-    msg += (char)payload[i];
-  }
+  for (unsigned int i = 0; i < length; i++) msg += (char)payload[i];
   msg.trim();
 
   AirQualityLevel level = parseAirQuality(msg);
   switch (level) {
     case AQ_SEHR_GUT:
-      leds.setColorSmooth(0, 255, 64); // türkis-grün
+      leds.stopBlinking();
+      leds.setColorSmooth(0, 255, 0);
       break;
     case AQ_GUT:
-      leds.setColorSmooth(0, 255, 0); // grün
+      leds.stopBlinking();
+      leds.setColorSmooth(127, 255, 0);
       break;
     case AQ_MAESSIG:
-      leds.setColorSmooth(255, 255, 0); // gelb
+      leds.stopBlinking();
+      leds.setColorSmooth(255, 255, 0);
       break;
     case AQ_SCHLECHT:
-      leds.setColorSmooth(255, 128, 0); // orange
+      leds.stopBlinking();
+      leds.setColorSmooth(255, 165, 0);
       break;
     case AQ_SEHR_SCHLECHT:
-      leds.setColorSmooth(255, 0, 0); // rot
+      leds.blink(255, 0, 0, 500);
       break;
     default:
-      leds.setColorSmooth(128, 128, 128); // grau für unbekannt
+      leds.stopBlinking();
+      leds.setColorSmooth(128, 128, 128);
       break;
   }
 }
 
-void setup(){
+void setup() {
   Serial.begin(115200);
-
   leds.begin();
   WiFiManager::begin(WIFI_SSID, WIFI_PASSWORD);
-
   mqttMgr.begin(MQTT_SERVER, MQTT_PORT);
   mqttMgr.setCommandCallback(onMqttMessage);
 }
 
-void loop(){
+void loop() {
   leds.handleFade();
   WiFiManager::maintain();
   mqttMgr.loop();

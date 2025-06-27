@@ -1,9 +1,11 @@
+// FadeHelper.h
 #pragma once
 #include <cstdint>
 
 struct RGB { uint8_t r, g, b; };
 
-RGB interpolate(const RGB& start, const RGB& target, uint16_t step, uint16_t maxSteps) {
+// Interpolation function marked inline to avoid multiple definitions
+inline RGB interpolate(const RGB& start, const RGB& target, uint16_t step, uint16_t maxSteps) {
   float frac = float(step) / maxSteps;
   return {
     uint8_t(start.r + (target.r - start.r) * frac),
