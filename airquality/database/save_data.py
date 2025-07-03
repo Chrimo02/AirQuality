@@ -4,7 +4,7 @@ import serial
 import time
 from datetime import datetime
 
-from airquality.database.db_helper import init_db, start_session, end_session
+from database.db_helper import init_db, start_session, end_session
 
 LOG_FILE    = 'ips7100_data.log'
 SERIAL_PORT = '/dev/ttyUSB0'

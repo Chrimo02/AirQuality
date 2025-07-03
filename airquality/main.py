@@ -5,7 +5,7 @@ import argparse
 
 # Sensor- und DB-Funktionen
 from sensorik.read_sensor_data import SensorReader
-from airquality.database.save_data import speichere_daten, insert_data
+from database.save_data import speichere_daten, insert_data
 from database.db_helper import init_db, start_session, end_session
 
 # Aktorik und Regeln
