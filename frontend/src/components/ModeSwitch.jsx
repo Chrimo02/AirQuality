@@ -1,4 +1,3 @@
-// src/components/ModeSwitch.jsx
 import React, { useState } from 'react';
 import { setMode } from '../services/devices';
 
@@ -6,8 +5,8 @@ export default function ModeSwitch({ initialMode = 'auto' }) {
   const [mode, setLocalMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = async (e) => {
-    const newMode = e.target.value; // 'auto' oder 'manual'
+  const switchMode = async newMode => {
+    if (newMode === mode) return;
     setLoading(true);
     try {
       await setMode(newMode);
@@ -20,18 +19,31 @@ export default function ModeSwitch({ initialMode = 'auto' }) {
     }
   };
 
+  const btnStyle = (active) => ({
+    backgroundColor: active ? '#71e4f8' : '#ccc',
+    color: '#1f2937',
+    border: 'none',
+    borderRadius: '0.5rem',
+    padding: '0.5rem 1rem',
+    cursor: loading ? 'not-allowed' : 'pointer'
+  });
+
   return (
-    <div className="card" style={{ padding: '0.5rem' }}>
-      <label htmlFor="mode-select" style={{ marginRight: '0.5rem' }}>Modus:</label>
-      <select
-        id="mode-select"
-        value={mode}
-        onChange={handleChange}
+    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+      <button
+        onClick={() => switchMode('auto')}
         disabled={loading}
+        style={btnStyle(mode === 'auto')}
       >
-        <option value="auto">Automatik</option>
-        <option value="manual">Manuell</option>
-      </select>
+        Automatik
+      </button>
+      <button
+        onClick={() => switchMode('manual')}
+        disabled={loading}
+        style={btnStyle(mode === 'manual')}
+      >
+        Manuell
+      </button>
     </div>
   );
 }

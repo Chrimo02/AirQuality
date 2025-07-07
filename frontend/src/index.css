@@ -1,12 +1,39 @@
 /* src/index.css */
 
+/* ————— Wow-Gradient + Wellen-Overlay im Body ————— */
+body {
+  background: linear-gradient(135deg, #5facdb 0%, #a2d9f9 100%);
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='800' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 67 C 273,183 441,-40 800,67 L800,00 L0,0 Z' fill='%23ffffff33'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, #5facdb 0%, #a2d9f9 100%);
+  background-repeat: repeat-x;
+  background-size: auto 200px, auto;
+  color: #1f2937;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ————— Container & Main für Glassmorphism ————— */
+.container,
+main {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin: 2rem auto;
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
 /* ————— Header-Styles ————— */
 header {
-  background-color: #ffffff;
-  color: #333333;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  color: #04377a;
   padding: 1rem 0;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -18,18 +45,84 @@ header h1 {
   font-family: 'Inter', sans-serif;
 }
 
+/* ————— Dashboard Content Wrapper ————— */
+.dashboard-content {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
 /* ————— Sensor-Grid ————— */
 .sensor-grid {
   display: grid;
-  /* Jede Karte mindestens 240px breit, so viele Spalten wie passen */
+  margin-top: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
-/* Optional: allgemeine Card-Basis */
+/* ————— Glowing Card Base (Sensor-Cards etc.) ————— */
 .card {
-  background-color: #fff;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.75rem;
+  box-shadow:
+    /* sanfter Grund-Schatten */
+    0 2px 12px rgba(0, 0, 0, 0.05),
+    /* blauer Glow */
+    0 0 8px rgba(67, 192, 255, 0.6),
+    0 0 16px rgba(67, 192, 255, 0.4);
+  padding: 1rem;
+  transition: box-shadow 0.3s ease;
+}
+.card:hover {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 12px rgba(67, 192, 255, 0.8),
+    0 0 24px rgba(67, 192, 255, 0.6);
+}
+
+/* ————— Glowing Chart-Container ————— */
+.chart-container {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.05),
+    0 0 8px rgba(67, 192, 255, 0.6),
+    0 0 16px rgba(67, 192, 255, 0.4);
+  padding: 1rem;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+  transition: box-shadow 0.3s ease;
+}
+.chart-container:hover {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 12px rgba(67, 192, 255, 0.8),
+    0 0 24px rgba(67, 192, 255, 0.6);
+}
+.chart-container .chart-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* ————— Footer / Control-Panel Styles ————— */
+footer,
+.control-panel {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
   border-radius: 0.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
 }

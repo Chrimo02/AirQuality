@@ -1,4 +1,3 @@
-// src/components/DeviceToggleButton.jsx
 import React, { useState } from 'react';
 import { toggleDevice } from '../services/devices';
 
@@ -19,7 +18,18 @@ export default function DeviceToggleButton({ name, deviceKey }) {
   };
 
   return (
-    <button onClick={handleToggle} disabled={loading}>
+    <button
+      onClick={handleToggle}
+      disabled={loading}
+      style={{
+        backgroundColor: isOn ? '#71e4f8' : '#ccc',
+        color: '#1f2937',
+        border: 'none',
+        borderRadius: '0.5rem',
+        padding: '0.5rem 1rem',
+        cursor: loading ? 'not-allowed' : 'pointer'
+      }}
+    >
       {name}: {isOn ? 'An' : 'Aus'}
     </button>
   );
