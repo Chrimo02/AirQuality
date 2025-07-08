@@ -19,6 +19,7 @@ void LedController::begin() {
 }
 
 void LedController::setColor(uint8_t r, uint8_t g, uint8_t b) {
+  _prevR = r; _prevG = g; _prevB = b;
   _curR = r; _curG = g; _curB = b;
   for (uint16_t i = 0; i < strip.numPixels(); i++)
     strip.setPixelColor(i, strip.Color(r, g, b));
@@ -27,6 +28,7 @@ void LedController::setColor(uint8_t r, uint8_t g, uint8_t b) {
 
 void LedController::setColorSmooth(uint8_t r, uint8_t g, uint8_t b, uint16_t steps, uint16_t interval) {
   stopBlinking();
+  _prevR = r; _prevG = g; _prevB = b;
   _startR = _curR; _startG = _curG; _startB = _curB;
   _targetR = r;    _targetG = g;    _targetB = b;
   _fadeSteps = steps;
@@ -48,7 +50,7 @@ void LedController::blink(uint8_t r, uint8_t g, uint8_t b, uint32_t intervalMs) 
 void LedController::stopBlinking() {
   if (!_blinking) return;
   _blinking = false;
-  setColor(_curR, _curG, _curB);
+  setColor(_prevR, _prevG, _prevB);
 }
 
 void LedController::handleFade() {

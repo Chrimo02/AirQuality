@@ -24,6 +24,7 @@ private:
     uint8_t  _curR, _curG, _curB;
     uint8_t  _startR, _startG, _startB;
     uint8_t  _targetR, _targetG, _targetB;
+    uint8_t  _prevR, _prevG, _prevB;
     uint16_t _fadeSteps;
     uint16_t _currentStep;
     uint32_t _fadeInterval;

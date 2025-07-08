@@ -61,14 +61,14 @@ void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int lengt
       break;
     case AQ_MAESSIG:
       leds.stopBlinking();
-      leds.setColorSmooth(255, 255, 0);
+      leds.setColorSmooth(255, 165, 0);
       break;
     case AQ_SCHLECHT:
       leds.stopBlinking();
-      leds.setColorSmooth(255, 165, 0);
+      leds.setColorSmooth(200, 0, 0);
       break;
     case AQ_SEHR_SCHLECHT:
-      leds.blink(255, 0, 0, 500);
+      leds.blink(255, 0, 0, 250);
       break;
     default:
       leds.stopBlinking();
