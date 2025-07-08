@@ -1,30 +1,28 @@
 import sqlite3
 from datetime import datetime
 
-
 DB_FILE = 'database/air_quality.db'
 
 def init_db():
     """
-    Erstellt (falls nicht vorhanden) die SQLite-Datenbank mit:
-      - sessions(id, name, location, start_time, end_time)
+    Erstellt (falls nicht vorhanden) die SQLite-DB mit:
+      - sessions(id, name UNIQUE, location, start_time, end_time)
       - air_data(id, timestamp, pm1_0, pm2_5, pm10, raw_line, session_id)
     """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Tabelle für Sessions
+    # Sessions mit UNIQUE-Constraint auf 'name'
     c.execute('''
       CREATE TABLE IF NOT EXISTS sessions (
          id          INTEGER PRIMARY KEY AUTOINCREMENT,
-         name        TEXT    NOT NULL,
+         name        TEXT    NOT NULL UNIQUE,
          location    TEXT,
          start_time  TEXT    NOT NULL,
          end_time    TEXT
       );
     ''')
 
-    # air_data um session_id erweitern
     c.execute('''
       CREATE TABLE IF NOT EXISTS air_data (
          id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,9 +40,20 @@ def init_db():
     return conn
 
 def start_session(conn, name: str, location: str = None) -> int:
-    """Legt eine neue Mess-Session an und liefert die session_id."""
-    ts = datetime.now().isoformat()
+    """
+    Legt eine neue Session nur dann an, wenn der Name noch nicht existiert.
+    Falls schon vorhanden, wird die bestehende session_id zurückgegeben.
+    """
     c = conn.cursor()
+
+    # Existenz prüfen
+    c.execute('SELECT id FROM sessions WHERE name = ?', (name,))
+    row = c.fetchone()
+    if row:
+        return row[0]
+
+    # Neu anlegen
+    ts = datetime.now().isoformat()
     c.execute('''
       INSERT INTO sessions (name, location, start_time)
       VALUES (?, ?, ?)
@@ -53,7 +62,7 @@ def start_session(conn, name: str, location: str = None) -> int:
     return c.lastrowid
 
 def end_session(conn, session_id: int):
-    """Schließt eine Session mit Endzeit."""
+    """Setzt die end_time für eine Session."""
     ts = datetime.now().isoformat()
     c = conn.cursor()
     c.execute('''
@@ -62,9 +71,3 @@ def end_session(conn, session_id: int):
        WHERE id = ?
     ''', (ts, session_id))
     conn.commit()
-
-if __name__ == '__main__':
-    from datetime import datetime
-    conn = init_db()
-    print("[DB] sessions und air_data sind bereit.")
-    conn.close()

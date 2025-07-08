@@ -18,8 +18,8 @@ class AirQualityRules:
             self.thresholds = {
                 'PM2.5': [5, 10, 15, 25],
                 'CO2eq': [600, 800, 1000, 1400],
-                'VOCAQI': [25, 50, 100, 200],
-                'TEMP': [18, 22, 26, 30],
+                'VOCAQI': [50, 100, 150, 200],
+                'TEMP': [18, 22, 28, 36],
                 'HUMID': {
                     'SEHR_GUT': (40, 50),
                     'GUT': (30, 60),
@@ -31,7 +31,7 @@ class AirQualityRules:
             self.thresholds = {
                 'PM2.5': [10, 15, 25, 35],
                 'CO2eq': [450, 500, 600, 800],
-                'VOCAQI': [15, 30, 60, 120],
+                'VOCAQI': [100, 200, 300, 400],
                 'TEMP': [10, 20, 30, 35],
                 'HUMID': {
                     'SEHR_GUT': (40, 70),
