@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV=/home/airquality/Desktop/gruppe-04---air-quality-monitoring-master@06e0adbcfb7/airquality/venv
+VIRTUAL_ENV=/home/airquality/gruppe-04---air-quality-monitoring/airquality/venv
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
