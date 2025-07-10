@@ -20,6 +20,7 @@ module.exports = {
 
   setupFiles: ['<rootDir>/jest.setup.cjs'],
 
+  // ← here, drop the `/extend-expect`
   setupFilesAfterEnv: ['@testing-library/jest-dom'],
 
   transformIgnorePatterns: ['/node_modules/']
