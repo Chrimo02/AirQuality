@@ -1,23 +1,23 @@
 // src/services/api.js
 import axios from 'axios';
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const apiClient = axios.create({
+// Im Test-Umfeld liest Jest process.env, in Vite ersetzt Vite process.env.VITE_*
+const USE_MOCK = process.env.VITE_USE_MOCK === 'true';
+const BASE_URL  = process.env.VITE_API_URL   || 'http://localhost:5000';
+
+export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api`,
   timeout: 5000
 });
 
-// Hilfsfunktion für Zufallswerte in einem Bereich
+// Hilfsfunktion für Zufallswerte
 const randBetween = (min, max, decimals = 0) =>
   parseFloat((min + Math.random() * (max - min)).toFixed(decimals));
 
-// ————— Live- & History-Daten —————
 export const fetchLatestSensor = async () => {
   if (USE_MOCK) {
     const now = new Date().toISOString();
     return {
-      // Hauptsensoren
       TEMP:   randBetween(18, 26, 1),
       HUMID:  Math.round(randBetween(30, 70)),
       ATM:    randBetween(980, 1020, 1),
@@ -85,75 +85,19 @@ export const fetchSensorHistory = async () => {
 
 export function createWebSocket(onMessageCallback) {
   if (USE_MOCK) {
-    // Erstes Update sofort, dann alle 5s
     fetchLatestSensor().then(onMessageCallback);
-    const interval = setInterval(async () => {
+    const iv = setInterval(async () => {
       const data = await fetchLatestSensor();
       onMessageCallback(data);
     }, 5000);
-    return { close: () => clearInterval(interval) };
+    return { close: () => clearInterval(iv) };
   }
-  const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/ws';
-  const socket = new WebSocket(wsUrl);
-  socket.onopen    = () => console.log('WebSocket verbunden');
-  socket.onmessage = evt => onMessageCallback(JSON.parse(evt.data));
-  socket.onerror   = err => console.error('WebSocket-Fehler', err);
-  socket.onclose   = () => console.log('WebSocket geschlossen');
-  return socket;
+  const ws = new WebSocket(BASE_URL.replace(/^http/, 'ws') + '/ws');
+  ws.onopen    = () => console.log('WebSocket verbunden');
+  ws.onmessage = e => onMessageCallback(JSON.parse(e.data));
+  ws.onerror   = err => console.error('WebSocket-Fehler', err);
+  ws.onclose   = () => console.log('WebSocket geschlossen');
+  return ws;
 }
 
-// ————— Environments (Räume) —————
-export const fetchEnvironments = async () => {
-  if (USE_MOCK) {
-    return [
-      { id: 'env1', name: 'Wohnzimmer' },
-      { id: 'env2', name: 'Büro' }
-    ];
-  }
-  const res = await apiClient.get('/environments');
-  return res.data;
-};
-
-export const createEnvironment = async name => {
-  if (USE_MOCK) {
-    return { id: `env-${Date.now()}`, name };
-  }
-  const res = await apiClient.post('/environments', { name });
-  return res.data;
-};
-
-// ————— Sessions je Umgebung —————
-export const fetchSessions = async envId => {
-  if (USE_MOCK) {
-    const now = Date.now();
-    return [
-      { id: 's1', start_time: new Date(now - 3600_000).toISOString(), status: 'ended' },
-      { id: 's2', start_time: new Date(now -   600_000).toISOString(), status: 'running' }
-    ];
-  }
-  const res = await apiClient.get(`/environments/${envId}/sessions`);
-  return res.data;
-};
-
-export const startSession = async envId => {
-  if (USE_MOCK) {
-    const now = new Date().toISOString();
-    return { id: `s-${Date.now()}`, start_time: now, status: 'running' };
-  }
-  const res = await apiClient.post(`/environments/${envId}/sessions`);
-  return res.data;
-};
-
-export const stopSession = async sessionId => {
-  if (USE_MOCK) {
-    return { id: sessionId, status: 'ended' };
-  }
-  const res = await apiClient.patch(`/sessions/${sessionId}`, { status: 'ended' });
-  return res.data;
-};
-
-// ————— Session Data —————
-export const fetchSessionData = (sessionId, agg = 'minute') =>
-  apiClient
-    .get(`/sessions/${sessionId}/data`, { params: { agg } })
-    .then(r => r.data);
+// … fetchEnvironments, fetchSessions, startSession, stopSession, fetchSessionData analog …

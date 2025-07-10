@@ -1,6 +1,5 @@
 // src/components/SessionDetail.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { fetchSessionData } from '../services/api';
 import {
   LineChart, Line, XAxis, YAxis,
@@ -8,13 +7,9 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const COLORS = [
-  '#ff7300', '#387908', '#8884d8',
-  '#82ca9d', '#ffc658', '#d0ed57'
-];
+const COLORS = ['#ff7300','#387908','#8884d8','#82ca9d','#ffc658','#d0ed57'];
 
-export default function SessionDetail() {
-  const { sessionId } = useParams();
+export default function SessionDetail({ sessionId }) {
   const [data, setData] = useState([]);
   const [availableMetrics, setAvailableMetrics] = useState([]);
   const defaultMetrics = ['TEMP','HUMID','CO2eq','PM2.5','VOCAQI'];
@@ -53,20 +48,16 @@ export default function SessionDetail() {
         Session-Detail: {sessionId}
       </h3>
 
-      {/* Metrik-Auswahl als Pill-Buttons */}
       <div className="flex flex-wrap gap-2 mb-6">
         {availableMetrics.map(metric => {
-          const isSelected = selectedMetrics.includes(metric);
+          const isSel = selectedMetrics.includes(metric);
           return (
             <button
               key={metric}
               onClick={() => toggleMetric(metric)}
-              className={
-                (isSelected
-                  ? 'bg-cyan-500 text-white'
-                  : 'bg-gray-100 text-gray-700')
-                + ' px-3 py-1 rounded-full text-sm shadow-sm'
-              }
+              className={`px-3 py-1 rounded-full text-sm shadow-sm ${
+                isSel ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-gray-700'
+              }`}
             >
               {metric}
             </button>
@@ -74,22 +65,20 @@ export default function SessionDetail() {
         })}
       </div>
 
-      {/* Dynamisches LineChart */}
       <div className="w-full h-80">
         <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+          <LineChart data={data} margin={{ top:10, right:20, bottom:10, left:0 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
+            <XAxis dataKey="time" />
+            <YAxis />
             <Tooltip />
             <Legend verticalAlign="top" height={36} />
-            {selectedMetrics.map((metric, i) => (
+            {selectedMetrics.map((metric,i) => (
               <Line
                 key={metric}
                 type="monotone"
                 dataKey={metric}
                 stroke={COLORS[i % COLORS.length]}
-                name={metric}
                 dot={false}
                 strokeWidth={2}
               />

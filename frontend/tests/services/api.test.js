@@ -1,27 +1,28 @@
-// src/services/api.test.js
-import axios from 'axios';
+// tests/services/api.test.js
 import MockAdapter from 'axios-mock-adapter';
-import { fetchLatestSensor, fetchSensorHistory } from './api';
+import { apiClient, fetchLatestSensor, fetchSensorHistory } from '../../src/services/api';
 
 describe('API Service', () => {
-  const mock = new MockAdapter(axios);
-
+  let mock;
+  beforeAll(() => {
+    mock = new MockAdapter(apiClient);
+  });
   afterEach(() => mock.reset());
+  afterAll(() => mock.restore());
 
-  it('fetchLatestSensor ruft /sensor/latest auf und gibt Daten zurück', async () => {
-    const fake = { TEMP: 25, HUMID: 50, timestamp: 'xyz' };
-    mock.onGet('http://localhost:5000/api/sensor/latest').reply(200, fake);
+  it('fetchLatestSensor ruft /sensor/latest und liefert Daten', async () => {
+    const dummy = { TEMP: 22, HUMID: 55, timestamp: '2025-07-10T12:00:00Z' };
+    mock.onGet('/sensor/latest').reply(200, dummy);
 
     const data = await fetchLatestSensor();
-    expect(data).toEqual(fake);
+    expect(data).toEqual(dummy);
   });
 
-  it('fetchSensorHistory ruft /sensor/history auf und gibt Array zurück', async () => {
-    const fakeArr = [{ timestamp: 'a' }, { timestamp: 'b' }];
-    mock.onGet('http://localhost:5000/api/sensor/history').reply(200, fakeArr);
+  it('fetchSensorHistory ruft /sensor/history und liefert ein Array', async () => {
+    const arr = [{ timestamp: 't1' }, { timestamp: 't2' }];
+    mock.onGet('/sensor/history').reply(200, arr);
 
     const data = await fetchSensorHistory();
-    expect(Array.isArray(data)).toBe(true);
-    expect(data).toHaveLength(2);
+    expect(data).toEqual(arr);
   });
 });

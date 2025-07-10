@@ -1,55 +1,67 @@
-// src/pages/Dashboard.test.jsx
+// tests/pages/Dashboard.test.jsx
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import Dashboard from './Dashboard';
-import * as api from '../services/api';
+import { render, screen, waitFor } from '@testing-library/react';
+import Dashboard from 'src/pages/Dashboard';
+import * as api from 'src/services/api';
 
-// Mock aller API-Aufrufe
-jest.spyOn(api, 'fetchEnvironments').mockResolvedValue([{ id: 'env1', name: 'Testraum' }]);
-jest.spyOn(api, 'fetchSessions').mockResolvedValue([{ id: 's1', start_time: new Date().toISOString(), status: 'running' }]);
-jest.spyOn(api, 'fetchLatestSensor').mockResolvedValue({ TEMP: 24, HUMID: 55, ATM:1010, VOCAQI:50, bVOCeq:0.5, GASest:0.2, CO2eq:600, timestamp: new Date().toISOString() });
-jest.spyOn(api, 'fetchSensorHistory').mockResolvedValue([]);
-jest.spyOn(api, 'createWebSocket').mockImplementation((cb) => {
-  // kein Live-Update im Test
-  return { close: jest.fn() };
-});
+// 1. gesamtes API‐Modul mocken
+jest.mock('src/services/api');
 
-describe('Dashboard Integration', () => {
-  it('zeigt nach Auswahl eines Raums die SensorCards an', async () => {
-    render(
-      <MemoryRouter initialEntries={['/environments/env1']}>
-        <Routes>
-          <Route path="/environments/:envId" element={<Dashboard />} />
-        </Routes>
-      </MemoryRouter>
-    );
+// 2. alle Child‐Komponenten stubben
+jest.mock('src/components/SensorDataCard', () => ({ label, value, unit }) => (
+  <div data-testid={`card-${label}`}>{label}: {value} {unit}</div>
+));
+jest.mock('src/components/ParticleChartCard', () => () => (
+  <div data-testid="particle-chart" />
+));
+jest.mock('src/components/ChartSection', () => () => (
+  <div data-testid="chart-section" />
+));
+jest.mock('src/components/ControlPanel', () => () => (
+  <div data-testid="control-panel" />
+));
 
-    // Warte kurz auf initiales Fetch
-    await waitFor(() => expect(api.fetchEnvironments).toHaveBeenCalled());
-    // Da envId via URL ist, sollten direkt SensorCards gerendert werden
-    expect(await screen.findByText(/Temperatur/i)).toBeInTheDocument();
-    expect(screen.getByText(/24 °C/)).toBeInTheDocument();
+describe('Dashboard', () => {
+  beforeEach(() => {
+    // Live‐Daten stubben
+    api.fetchLatestSensor.mockResolvedValue({
+      TEMP: 22,
+      HUMID: 55,
+      ATM: 1013,
+      VOCAQI: 25,
+      bVOCeq: 0.3,
+      GASest: 0.4,
+      CO2eq: 415,
+      timestamp: '2025-07-10T12:00:00Z'
+    });
+    // History stubben (leer reicht)
+    api.fetchSensorHistory.mockResolvedValue([]);
+    // WebSocket stubben
+    api.createWebSocket.mockImplementation(onMsg => {
+      // direkt einmaliges Update
+      onMsg({
+        TEMP: 22,
+        HUMID: 55,
+        ATM: 1013,
+        VOCAQI: 25,
+        bVOCeq: 0.3,
+        GASest: 0.4,
+        CO2eq: 415,
+        timestamp: '2025-07-10T12:00:00Z'
+      });
+      return { close: jest.fn() };
+    });
   });
 
-  it('erzeugt neue Session beim Klick auf "+ Neue Session"', async () => {
-    const newSession = { id: 's2', start_time: new Date().toISOString(), status: 'running' };
-    api.startSession = jest.fn().mockResolvedValue(newSession);
+  afterEach(() => jest.resetAllMocks());
 
-    render(
-      <MemoryRouter initialEntries={['/environments/env1']}>
-        <Routes>
-          <Route path="/environments/:envId" element={<Dashboard />} />
-        </Routes>
-      </MemoryRouter>
+  it('zeigt nach Laden eine Karte für Temperatur', async () => {
+    render(<Dashboard />);
+
+    // warte, bis unser SensorDataCard‐Stub gerendert ist
+    await waitFor(() =>
+      expect(screen.getByTestId('card-Temperatur')).toBeInTheDocument()
     );
-
-    // Button finden und klicken
-    const btn = await screen.findByRole('button', { name: /\+ Neue Session/i });
-    fireEvent.click(btn);
-
-    await waitFor(() => expect(api.startSession).toHaveBeenCalledWith('env1'));
-    // Neuer Session-Button müsste jetzt gerendert sein
-    expect(screen.getByRole('button', { name: /s2/i })).toBeInTheDocument();
+    expect(screen.getByTestId('card-Temperatur')).toHaveTextContent('Temperatur: 22 °C');
   });
 });

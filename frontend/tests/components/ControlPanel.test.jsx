@@ -1,15 +1,7 @@
-// src/components/ControlPanel.test.jsx
+// tests/components/ControlPanel.test.jsx
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ControlPanel from './ControlPanel';
-
-// Wir mocken die Kind-Komponenten, um uns rein auf ControlPanel zu konzentrieren:
-jest.mock('./DeviceToggleButton', () => ({ name, deviceKey }) => (
-  <button data-testid={`toggle-${deviceKey}`}>{name}</button>
-));
-jest.mock('./ModeSwitch', () => () => (
-  <div data-testid="modeswitch">ModeSwitch</div>
-));
+import ControlPanel from '../../src/components/ControlPanel';
 
 describe('ControlPanel', () => {
   beforeEach(() => {
@@ -18,17 +10,18 @@ describe('ControlPanel', () => {
 
   it('zeigt die Überschrift an', () => {
     expect(
-      screen.getByRole('heading', { name: /Gerätesteuerung/i })
+      screen.getByRole('heading', { level: 3, name: /Gerätesteuerung/i })
     ).toBeInTheDocument();
   });
 
-  it('rendert drei DeviceToggleButtons mit den korrekten deviceKeys', () => {
-    expect(screen.getByTestId('toggle-ventilator')).toHaveTextContent('Ventilator');
-    expect(screen.getByTestId('toggle-diffusor')).toHaveTextContent('Aroma-Diffusor');
-    expect(screen.getByTestId('toggle-led_ring')).toHaveTextContent('LED-Ring');
+  it('rendert drei Toggle-Buttons', () => {
+    expect(screen.getByRole('button', { name: /Ventilator:/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Aroma-Diffusor:/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /LED-Ring:/i })).toBeInTheDocument();
   });
 
-  it('baut die ModeSwitch-Komponente ein', () => {
-    expect(screen.getByTestId('modeswitch')).toBeInTheDocument();
+  it('zeigt Automatik- und Manuell-Buttons für den Modus', () => {
+    expect(screen.getByRole('button', { name: /^Automatik$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Manuell$/i })).toBeInTheDocument();
   });
 });

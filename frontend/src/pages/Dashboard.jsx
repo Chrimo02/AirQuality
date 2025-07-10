@@ -1,6 +1,5 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import SensorDataCard    from '../components/SensorDataCard';
 import ParticleChartCard from '../components/ParticleChartCard';
 import ChartSection      from '../components/ChartSection';
@@ -15,25 +14,23 @@ import {
   stopSession
 } from '../services/api';
 
-export default function Dashboard() {
-  const { envId } = useParams();
-
-  // Live-Data State
+export default function Dashboard({ envId }) {
+  // Live-Data
   const [sensorData, setSensorData]   = useState({});
   const [historyData, setHistoryData] = useState([]);
 
-  // Session State for this environment
+  // Session-State
   const [sessions, setSessions]             = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
 
-  // Load Sessions when envId changes
+  // Load Sessions
   useEffect(() => {
     if (!envId) return;
     fetchSessions(envId).then(setSessions);
     setCurrentSession(null);
   }, [envId]);
 
-  // Initial Live-Data + History
+  // Initial Fetch
   useEffect(() => {
     (async () => {
       const latest  = await fetchLatestSensor();
@@ -43,7 +40,7 @@ export default function Dashboard() {
     })();
   }, []);
 
-  // WebSocket für Live-Updates
+  // WebSocket
   useEffect(() => {
     const ws = createWebSocket(data => {
       setSensorData(data);
@@ -52,7 +49,6 @@ export default function Dashboard() {
     return () => ws.close();
   }, []);
 
-  // Start/Stop Session
   const handleStart = () => {
     if (!envId) return;
     startSession(envId).then(newS => {
@@ -70,33 +66,22 @@ export default function Dashboard() {
     });
   };
 
-  // Sensor-Labels
-  const labels = [
-    'Temperatur','Feuchte','Luftdruck',
-    'VOC-Index','bVOCeq','GASest','CO₂-Äquivalent'
-  ];
+  const labels = ['Temperatur','Feuchte','Luftdruck','VOC-Index','bVOCeq','GASest','CO₂-Äquivalent'];
   const keyFor = lbl => ({
-    'Temperatur':     'TEMP',
-    'Feuchte':        'HUMID',
-    'Luftdruck':      'ATM',
-    'VOC-Index':      'VOCAQI',
-    'bVOCeq':         'bVOCeq',
-    'GASest':         'GASest',
-    'CO₂-Äquivalent': 'CO2eq'
-  }[lbl] || '');
+    'Temperatur':'TEMP','Feuchte':'HUMID','Luftdruck':'ATM',
+    'VOC-Index':'VOCAQI','bVOCeq':'bVOCeq','GASest':'GASest','CO₂-Äquivalent':'CO2eq'
+  })[lbl] || '';
 
-  // Letzte Aktualisierung
   const lastUpdate = sensorData.timestamp
     ? new Date(sensorData.timestamp).toLocaleTimeString([], {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+        hour:'2-digit',minute:'2-digit',second:'2-digit'
       })
     : '--:--:--';
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-8">
-      <h2 className="text-xl font-semibold">Dashboard - Raum: {envId}</h2>
+      <h2 className="text-xl font-semibold">Dashboard – Raum: {envId}</h2>
 
-      {/* Session Controls */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleStart}
@@ -108,12 +93,11 @@ export default function Dashboard() {
           <button
             key={s.id}
             onClick={() => setCurrentSession(s.id)}
-            className={
-              (currentSession === s.id
+            className={`rounded-full px-4 py-2 shadow transition ${
+              currentSession===s.id
                 ? 'bg-cyan-500 text-white'
-                : 'bg-white text-cyan-600 border border-cyan-600')
-              + ' rounded-full px-4 py-2 shadow transition'
-            }
+                : 'bg-white text-cyan-600 border border-cyan-600'
+            }`}
           >
             {new Date(s.start_time).toLocaleTimeString()}
           </button>
@@ -128,39 +112,29 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Letzte Aktualisierung */}
       <div className="text-center text-sm text-gray-400">
         Aktualisiert: {lastUpdate}
       </div>
 
-      {/* Detail-Ansicht oder Live-View */}
       {currentSession
         ? <SessionDetail sessionId={currentSession} />
-        : (
-          <>
-            {/* Live Sensor-Cards */}
+        : <>
             <section className="sensor-grid">
-              {labels.map(label => (
+              {labels.map(lbl=>(
                 <SensorDataCard
-                  key={label}
-                  label={label}
-                  value={sensorData[keyFor(label)]}
-                  unit={
-                    label === 'Temperatur' ? '°C' :
-                    label === 'Feuchte'     ? '%'  :
-                    label === 'Luftdruck'   ? 'hPa': 'ppm'
-                  }
+                  key={lbl}
+                  label={lbl}
+                  value={sensorData[keyFor(lbl)]}
+                  unit={ lbl==='Temperatur'?'°C': lbl==='Feuchte'?'%': lbl==='Luftdruck'?'hPa':'ppm' }
                 />
               ))}
             </section>
 
-            {/* Partikel-Charts */}
             <section className="sensor-grid">
               <ParticleChartCard data={sensorData} type="PC" />
               <ParticleChartCard data={sensorData} type="PM" />
             </section>
 
-            {/* Verlauf & Steuerung */}
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <ChartSection historyData={historyData} />
@@ -168,7 +142,6 @@ export default function Dashboard() {
               <ControlPanel />
             </section>
           </>
-        )
       }
     </main>
   );
