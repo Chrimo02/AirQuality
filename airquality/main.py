@@ -1,38 +1,27 @@
-#!/usr/bin/env python3
 import time
 import argparse
 
-# Sensor- und DB-Funktionen
 from sensorik.read_sensor_data import SensorReader
 from database.save_data import speichere_daten, insert_data
 from database.db_helper import init_db, start_session, end_session
 
-# Aktorik und Regeln
 from tp100_controller import TP100Controller
 from aktorik.air_control_rules import AirControlRules
-from aktorik.air_quality_rating import (
-    SessionType,
-    AirQualityRules,
-    air_quality_to_string
-)
+from aktorik.air_quality_rating import SessionType, AirQualityRules, air_quality_to_string
 
-# MQTT-Client
 from mqtt_client import MQTTClient
 
-# Konfiguration
 MQTT_BROKER   = "172.20.10.4"
 MQTT_PORT     = 1883
 MQTT_TOPIC    = "airquality/command/led"
-
 VENTILATOR_IP = "172.20.10.5"
 DIFFUSOR_IP   = "172.20.10.6"
 TAPO_EMAIL    = "airqualitythws@gmail.com"
 TAPO_PASSWORD = "P20ro25g$"
 
-
 def parse_args():
     p = argparse.ArgumentParser(
-        description="Starte Luftmessung mit Session-Namen und Ort."
+        description="Starte Luftmessung mit Session-Namen, Ort und Typ."
     )
     p.add_argument(
         "-s", "--session",
@@ -44,50 +33,39 @@ def parse_args():
         default=None,
         help="Optionale Ortsbeschreibung, z. B. 'EG-Wohnzimmer'."
     )
+    p.add_argument(
+        "--type",
+        choices=["indoor", "outdoor"],
+        default="indoor",
+        help="Session-Typ: indoor (Standard) oder outdoor"
+    )
     return p.parse_args()
-
 
 def main():
     args = parse_args()
-
-    # 1) Sensor initialisieren
+    session_type = SessionType.INDOOR if args.type.lower() == "indoor" else SessionType.OUTDOOR
     reader = SensorReader()
-
-    # 2) Datenbank & Session starten
-    conn       = init_db()
-    session_id = start_session(conn, args.session, args.location)
-    print(f"[SESSION] #{session_id} '{args.session}' gestartet (Ort: {args.location})")
-
-    # 3) Aktoren & Regel-Engines
+    conn = init_db()
+    session_id = start_session(conn, args.session, args.location, session_type.value)
+    print(f"[SESSION] #{session_id} '{args.session}' ({session_type.value}) gestartet (Ort: {args.location})")
     ventilator = TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
-    diffusor   = TP100Controller(DIFFUSOR_IP,   TAPO_EMAIL, TAPO_PASSWORD)
-    rules      = AirControlRules(SessionType.INDOOR)
-    ratings    = AirQualityRules(SessionType.INDOOR)
-
-    # 4) MQTT-Client
+    diffusor   = TP100Controller(DIFFUSOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
+    rules      = AirControlRules(session_type)
+    ratings    = AirQualityRules(session_type)
     mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
-
-    print(f"System gestartet für Session '{args.session}'")
+    print(f"System gestartet für Session '{args.session}' (Typ: {session_type.value})")
     try:
         while True:
             raw = reader.lese_daten()
             if not raw:
                 time.sleep(1)
                 continue
-
-            # 5) Daten persistieren
             speichere_daten(raw)
             insert_data(conn, raw, session_id)
-
-            # 6) Messwerte für Regel & Rating extrahieren
             measurements = reader.get_rating_measurements(raw)
-
-            # 7) Gesamt-Luftqualität bewerten & per MQTT senden
-            overall_quality     = ratings.get_overall_air_quality(measurements)
+            overall_quality = ratings.get_overall_air_quality(measurements)
             overall_quality_str = air_quality_to_string(overall_quality)
             mqtt_client.publish(overall_quality_str)
-
-            # 8) Ventilator steuern
             status_v = ventilator.get_status()
             if status_v == "AUS" and rules.needs_ventilation(measurements):
                 print("Ventilator einschalten")
@@ -95,8 +73,6 @@ def main():
             elif status_v == "EIN" and rules.ventilation_not_needed(measurements):
                 print("Ventilator ausschalten")
                 ventilator.turn_off()
-
-            # 9) Aroma-Diffusor steuern
             status_d = diffusor.get_status()
             if status_d == "AUS" and rules.diffusor_should_be_on(measurements):
                 print("Diffusor einschalten")
@@ -104,21 +80,16 @@ def main():
             elif status_d == "EIN" and rules.diffusor_should_be_off(measurements):
                 print("Diffusor ausschalten")
                 diffusor.turn_off()
-
-            # 10) Status-Ausgabe
             print(f"Messwerte: {measurements}")
             print(f"Ventilator: {ventilator.get_status()}, Diffusor: {diffusor.get_status()}")
             time.sleep(1)
-
     except KeyboardInterrupt:
         print("\n[INFO] Beendet durch Benutzer.")
     finally:
-        # 11) Session beenden & Ressourcen freigeben
         end_session(conn, session_id)
         print(f"[SESSION] #{session_id} beendet.")
         reader.close()
         conn.close()
-
 
 if __name__ == "__main__":
     main()
