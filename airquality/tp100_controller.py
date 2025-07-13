@@ -27,7 +27,7 @@ class TP100Controller:
 
     def get_status(self):
         info = self.p100.getDeviceInfo()
-        return "EIN" if info.get('device_on', False) else "AUS"
+        return "on" if info.get('device_on', False) else "off"
 
     def get_name(self):
         return self.p100.getDeviceName()
