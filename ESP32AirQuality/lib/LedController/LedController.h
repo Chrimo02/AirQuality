@@ -1,4 +1,3 @@
-// LedController.h
 #pragma once
 #include "Config.h"
 #include "FadeHelper.h"
@@ -20,7 +19,7 @@ public:
 
 private:
     Adafruit_NeoPixel strip;
-    // interne State-Variablen…
+    // State-Variablen
     uint8_t  _curR, _curG, _curB;
     uint8_t  _startR, _startG, _startB;
     uint8_t  _targetR, _targetG, _targetB;

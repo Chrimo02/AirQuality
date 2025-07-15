@@ -4,8 +4,8 @@
 
 struct RGB { uint8_t r, g, b; };
 
-// Interpolation function marked inline to avoid multiple definitions
 inline RGB interpolate(const RGB& start, const RGB& target, uint16_t step, uint16_t maxSteps) {
+  if (maxSteps == 0) return start;
   float frac = float(step) / maxSteps;
   return {
     uint8_t(start.r + (target.r - start.r) * frac),

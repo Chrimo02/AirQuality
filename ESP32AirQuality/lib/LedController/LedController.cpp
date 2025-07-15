@@ -1,4 +1,3 @@
-// LedController.cpp
 #include "LedController.h"
 #include "Config.h"
 #include "FadeHelper.h"

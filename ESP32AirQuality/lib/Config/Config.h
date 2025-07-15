@@ -7,8 +7,8 @@ static constexpr char WIFI_SSID[]     = "Christians iPhone";
 static constexpr char WIFI_PASSWORD[] = "christian";
 
 // --- MQTT ---
-//static constexpr char MQTT_SERVER[]   = "172.20.10.3"; //ip lenovo
-static constexpr char MQTT_SERVER[]   = "172.20.10.4"; //ip raspberry
+static constexpr char MQTT_SERVER[]   = "172.20.10.3"; //ip lenovo
+//static constexpr char MQTT_SERVER[]   = "172.20.10.4"; //ip raspberry
 static constexpr uint16_t MQTT_PORT   = 1883;
 static constexpr char MQTT_TOPIC[]    = "airquality/command/led";
 

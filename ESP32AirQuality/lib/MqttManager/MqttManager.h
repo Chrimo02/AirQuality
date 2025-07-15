@@ -1,7 +1,7 @@
-// MqttManager.h
 #pragma once
 #include <PubSubClient.h>
 #include <functional>
+#include <Arduino.h>
 
 class MqttManager {
 public:
@@ -12,5 +12,8 @@ public:
 private:
   PubSubClient& _client;
   unsigned long _reconnectDelay = 2000;
+  unsigned long _lastReconnectAttempt = 0;
+  String _clientId = "";
   void reconnect();
+  void generateClientId();
 };
