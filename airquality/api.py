@@ -14,6 +14,7 @@ from sensorik.read_sensor_data import SensorReader
 from aktorik.air_quality_rating import AirQualityRules, SessionType, AirQuality, air_quality_to_string
 from aktorik.air_control_rules import AirControlRules
 from tp100_controller import TP100Controller
+from mqtt_client import MQTTClient
 
 app = FastAPI(title="Air Quality Monitor API", version="1.0.0")
 
@@ -35,6 +36,9 @@ sensor_reader = None
 current_session_id = None
 websocket_connections = []
 
+MQTT_BROKER   = "172.20.10.4"
+MQTT_PORT     = 1883
+MQTT_TOPIC    = "airquality/command/led"
 VENTILATOR_IP = "172.20.10.5"
 DIFFUSOR_IP = "172.20.10.6"
 TAPO_EMAIL = "airqualitythws@gmail.com"
@@ -43,6 +47,8 @@ ventilator_auto = True
 diffusor_auto = True
 last_vent_state  = None          
 last_diff_state  = None
+
+mqtt_client = None
 
 class SessionCreate(BaseModel):
     name: str
@@ -146,7 +152,7 @@ def get_air_quality_colors():
 
 @app.on_event("startup")
 async def startup_event():
-    global sensor_reader
+    global sensor_reader, mqtt_client
     conn = init_db()
     conn.close()
     
@@ -156,6 +162,13 @@ async def startup_event():
     except Exception as e:
         print(f"Sensor konnte nicht initialisiert werden: {e}")
         sensor_reader = None
+
+    try:
+        mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
+        print(f"MQTT Client verbunden mit {MQTT_BROKER}:{MQTT_PORT}, Topic: {MQTT_TOPIC}")
+    except Exception as e:
+        print(f"MQTT Client konnte nicht verbunden werden: {e}")
+        mqtt_client = None
     
     asyncio.create_task(live_data_loop())
 
@@ -217,6 +230,13 @@ async def live_data_loop():
             rules = get_air_quality_rules()
             overall_quality = rules.get_overall_air_quality(rating_vals)
             overall_quality_str = air_quality_to_string(overall_quality)
+
+            # MQTT Publish
+            if mqtt_client:
+                try:
+                    mqtt_client.publish(overall_quality_str)
+                except Exception as e:
+                    print(f"Fehler beim MQTT Publish: {e}")
 
             # Automatische Steuerung
             control_rules = get_air_control_rules()
