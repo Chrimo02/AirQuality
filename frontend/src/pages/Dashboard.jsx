@@ -14,23 +14,19 @@ import {
   stopSession
 } from '../services/api';
 
-export default function Dashboard({ envId }) {
-  // Live-Data
+export default function Dashboard() {
   const [sensorData, setSensorData]   = useState({});
   const [historyData, setHistoryData] = useState([]);
 
-  // Session-State
   const [sessions, setSessions]             = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
 
-  // Load Sessions
+  // Sessions initial laden
   useEffect(() => {
-    if (!envId) return;
-    fetchSessions(envId).then(setSessions);
-    setCurrentSession(null);
-  }, [envId]);
+    fetchSessions().then(setSessions);
+  }, []);
 
-  // Initial Fetch
+  // Initial Latest + (Pseudo) History
   useEffect(() => {
     (async () => {
       const latest  = await fetchLatestSensor();
@@ -40,48 +36,61 @@ export default function Dashboard({ envId }) {
     })();
   }, []);
 
-  // WebSocket
+  // WebSocket für kontinuierliche Updates
   useEffect(() => {
     const ws = createWebSocket(data => {
       setSensorData(data);
-      setHistoryData(prev => [...prev.slice(-49), data]);
+      setHistoryData(prev => {
+        const next = [...prev, data];
+        // begrenzen, z.B. 200 Punkte
+        return next.slice(-200);
+      });
     });
     return () => ws.close();
   }, []);
 
   const handleStart = () => {
-    if (!envId) return;
-    startSession(envId).then(newS => {
+    startSession().then(newS => {
       setSessions(s => [newS, ...s]);
       setCurrentSession(newS.id);
     });
   };
+
   const handleStop = () => {
     if (!currentSession) return;
     stopSession(currentSession).then(() => {
       setSessions(s => s.map(x =>
-        x.id === currentSession ? { ...x, status: 'ended' } : x
+        x.id === currentSession ? { ...x, end_time: new Date().toISOString(), is_active: false } : x
       ));
       setCurrentSession(null);
     });
   };
 
-  const labels = ['Temperatur','Feuchte','Luftdruck','VOC-Index','bVOCeq','GASest','CO₂-Äquivalent'];
+  const labels = [
+    'Temperatur','Feuchte','Luftdruck',
+    'VOC-Index','bVOCeq','GASest','CO₂-Äquivalent'
+  ];
   const keyFor = lbl => ({
-    'Temperatur':'TEMP','Feuchte':'HUMID','Luftdruck':'ATM',
-    'VOC-Index':'VOCAQI','bVOCeq':'bVOCeq','GASest':'GASest','CO₂-Äquivalent':'CO2eq'
-  })[lbl] || '';
+    'Temperatur':     'TEMP',
+    'Feuchte':        'HUMID',
+    'Luftdruck':      'ATM',
+    'VOC-Index':      'VOCAQI',
+    'bVOCeq':         'bVOCeq',
+    'GASest':         'GASest',
+    'CO₂-Äquivalent': 'CO2eq'
+  }[lbl] || '');
 
   const lastUpdate = sensorData.timestamp
     ? new Date(sensorData.timestamp).toLocaleTimeString([], {
-        hour:'2-digit',minute:'2-digit',second:'2-digit'
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
       })
     : '--:--:--';
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-8">
-      <h2 className="text-xl font-semibold">Dashboard – Raum: {envId}</h2>
+      <h2 className="text-xl font-semibold">Dashboard</h2>
 
+      {/* Sessions */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleStart}
@@ -94,12 +103,12 @@ export default function Dashboard({ envId }) {
             key={s.id}
             onClick={() => setCurrentSession(s.id)}
             className={`rounded-full px-4 py-2 shadow transition ${
-              currentSession===s.id
+              currentSession === s.id
                 ? 'bg-cyan-500 text-white'
                 : 'bg-white text-cyan-600 border border-cyan-600'
             }`}
           >
-            {new Date(s.start_time).toLocaleTimeString()}
+            {s.name || new Date(s.start_time).toLocaleTimeString()}
           </button>
         ))}
         {currentSession && (
@@ -120,12 +129,16 @@ export default function Dashboard({ envId }) {
         ? <SessionDetail sessionId={currentSession} />
         : <>
             <section className="sensor-grid">
-              {labels.map(lbl=>(
+              {labels.map(label => (
                 <SensorDataCard
-                  key={lbl}
-                  label={lbl}
-                  value={sensorData[keyFor(lbl)]}
-                  unit={ lbl==='Temperatur'?'°C': lbl==='Feuchte'?'%': lbl==='Luftdruck'?'hPa':'ppm' }
+                  key={label}
+                  label={label}
+                  value={sensorData[keyFor(label)]}
+                  unit={
+                    label === 'Temperatur' ? '°C' :
+                    label === 'Feuchte'     ? '%'  :
+                    label === 'Luftdruck'   ? 'hPa': 'ppm'
+                  }
                 />
               ))}
             </section>

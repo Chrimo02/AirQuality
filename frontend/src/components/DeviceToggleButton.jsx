@@ -1,17 +1,19 @@
+// src/components/DeviceToggleButton.jsx
 import React, { useState } from 'react';
-import { toggleDevice } from '../services/devices';
+import { controlDevice } from '../services/devices';
 
-export default function DeviceToggleButton({ name, deviceKey }) {
-  const [isOn, setIsOn] = useState(false);
+export default function DeviceToggleButton({ name, deviceKey, status, onRefresh }) {
   const [loading, setLoading] = useState(false);
 
-  const handleToggle = async () => {
+  const isOn = status === 'on';
+
+  const toggle = async () => {
     setLoading(true);
     try {
-      await toggleDevice(deviceKey, !isOn);
-      setIsOn(prev => !prev);
-    } catch (err) {
-      console.error('Toggle-Fehler:', err);
+      await controlDevice(deviceKey, isOn ? 'off' : 'on');
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      alert(`Fehler beim Schalten von ${name}`);
     } finally {
       setLoading(false);
     }
@@ -19,7 +21,7 @@ export default function DeviceToggleButton({ name, deviceKey }) {
 
   return (
     <button
-      onClick={handleToggle}
+      onClick={toggle}
       disabled={loading}
       style={{
         backgroundColor: isOn ? '#71e4f8' : '#ccc',
@@ -27,10 +29,14 @@ export default function DeviceToggleButton({ name, deviceKey }) {
         border: 'none',
         borderRadius: '0.5rem',
         padding: '0.5rem 1rem',
-        cursor: loading ? 'not-allowed' : 'pointer'
+        minWidth: '140px',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        transition: 'background-color .2s'
       }}
+      title={isOn ? 'Ausschalten' : 'Einschalten'}
     >
       {name}: {isOn ? 'An' : 'Aus'}
+      {loading && ' …'}
     </button>
   );
 }

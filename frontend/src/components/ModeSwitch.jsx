@@ -1,7 +1,8 @@
+// src/components/ModeSwitch.jsx
 import React, { useState } from 'react';
 import { setMode } from '../services/devices';
 
-export default function ModeSwitch({ initialMode = 'auto' }) {
+export default function ModeSwitch({ initialMode = 'manual', onModeChange }) {
   const [mode, setLocalMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
 
@@ -11,25 +12,33 @@ export default function ModeSwitch({ initialMode = 'auto' }) {
     try {
       await setMode(newMode);
       setLocalMode(newMode);
-    } catch (err) {
-      console.error('Moduswechsel-Fehler:', err);
+      onModeChange && onModeChange(newMode);
+    } catch (e) {
+      console.error('Moduswechsel fehlgeschlagen', e);
       alert('Modus konnte nicht gesetzt werden.');
     } finally {
       setLoading(false);
     }
   };
 
-  const btnStyle = (active) => ({
+  const btnStyle = active => ({
     backgroundColor: active ? '#71e4f8' : '#ccc',
     color: '#1f2937',
     border: 'none',
     borderRadius: '0.5rem',
     padding: '0.5rem 1rem',
-    cursor: loading ? 'not-allowed' : 'pointer'
+    cursor: loading ? 'not-allowed' : 'pointer',
+    minWidth: '120px'
   });
 
   return (
-    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+    <div style={{
+      display: 'flex',
+      gap: '1rem',
+      justifyContent: 'center',
+      marginTop: '1rem',
+      flexWrap: 'wrap'
+    }}>
       <button
         onClick={() => switchMode('auto')}
         disabled={loading}
