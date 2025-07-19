@@ -14,8 +14,8 @@ from mqtt_client import MQTTClient
 MQTT_BROKER   = "172.20.10.4"
 MQTT_PORT     = 1883
 MQTT_TOPIC    = "airquality/command/led"
-VENTILATOR_IP = "172.20.10.5"
-DIFFUSOR_IP   = "172.20.10.6"
+VENTILATOR_IP = "172.20.10.10"
+DIFFUSOR_IP   = "172.20.10.11"
 TAPO_EMAIL    = "airqualitythws@gmail.com"
 TAPO_PASSWORD = "P20ro25g$"
 
