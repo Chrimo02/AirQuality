@@ -1,107 +1,101 @@
-import { useEffect, useRef } from 'react';
-
-const COLOR_MAP = {
-  "SEHR GUT": { base: "#16a34a", grad: ["#16a34a","#22c55e"] },
-  "GUT": { base: "#22c55e", grad: ["#22c55e","#4ade80"] },
-  "MAESSIG": { base: "#eab308", grad: ["#eab308","#facc15"] },
-  "SCHLECHT": { base: "#f97316", grad: ["#f97316","#fb923c"] },
-  "SEHR SCHLECHT": { base: "#dc2626", grad: ["#dc2626","#ef4444"] }
+// Mapping Qualitätsstufen (für Sparkline)
+const QUALITY_NUM = {
+  "SEHR GUT": 5,
+  "GUT": 4,
+  "MAESSIG": 3,
+  "SCHLECHT": 2,
+  "SEHR SCHLECHT": 1
 };
 
-function drawSpark(canvas, points, color) {
-  if (!canvas || !points.length) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width = canvas.clientWidth * window.devicePixelRatio;
-  const h = canvas.height = canvas.clientHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  ctx.clearRect(0,0,w,h);
+const COLOR_MAP = {
+  "SEHR GUT": "bg-emerald-400",
+  "GUT": "bg-green-400",
+  "MAESSIG": "bg-amber-400",
+  "SCHLECHT": "bg-orange-500",
+  "SEHR SCHLECHT": "bg-red-500"
+};
 
-  // Normalisieren
-  const vals = points.map(p => p.v).filter(v => typeof v === 'number');
-  if (!vals.length) return;
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const span = max - min || 1;
+export default function AirQualitySummary({ overall, history, frozen }) {
+  // Sparkline: letzte 30 overall_quality aus History (falls vorhanden)
+  const points = (history || [])
+    .filter(r => r.overall_quality)
+    .slice(-30);
+  const values = points.map(p => QUALITY_NUM[p.overall_quality] || 0);
 
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = color;
-  ctx.beginPath();
-  points.forEach((p,i) => {
-    const x = (i / (points.length - 1)) * (canvas.clientWidth - 2) + 1;
-    const yNorm = (p.v - min) / span;
-    const y = (1 - yNorm) * (canvas.clientHeight - 4) + 2;
-    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-  });
-  ctx.stroke();
+  const max = 5; // fest
+  const width = 140;
+  const height = 32;
+  const step = points.length > 1 ? (width / (points.length - 1)) : width;
+  const path = values.length
+    ? values.map((v, i) => {
+        const x = i * step;
+        const y = height - (v / max) * height;
+        return `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
+      }).join(' ')
+    : '';
 
-  // Fill (light)
-  const grd = ctx.createLinearGradient(0,0,0,canvas.clientHeight);
-  grd.addColorStop(0, color + "55");
-  grd.addColorStop(1, color + "00");
-  ctx.fillStyle = grd;
-  ctx.lineTo(canvas.clientWidth, canvas.clientHeight);
-  ctx.lineTo(0, canvas.clientHeight);
-  ctx.closePath();
-  ctx.fill();
-}
+  if (frozen) {
+    return (
+      <div className="aq-card flex flex-col gap-3 items-start justify-center opacity-60">
+        <div className="text-sm uppercase tracking-wide text-slate-500">
+          Gesamtluftqualität (Freeze)
+        </div>
+        <div className="text-xs text-slate-500">
+          Historische Session – Live-Bewertung pausiert
+        </div>
+        {values.length ? (
+          <div className="mt-2">
+            <svg width={width} height={height} className="overflow-visible">
+              <path d={path} fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <div className="text-[10px] text-slate-400 mt-1">Verlauf (historisch)</div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-slate-400 mt-1">Kein Verlauf</div>
+        )}
+      </div>
+    );
+  }
 
-export default function AirQualitySummary({ overall, history = [] }) {
-  const canvasRef = useRef(null);
+  if (!overall) {
+    return (
+      <div className="aq-card flex flex-col gap-2">
+        <div className="text-sm uppercase tracking-wide text-slate-400">
+          Gesamtluftqualität
+        </div>
+        <div className="h-10 flex items-center text-slate-400 text-sm">Lade...</div>
+      </div>
+    );
+  }
 
-  // Sparkline basiert z.B. auf CO2eq (oder PM2.5 fallback)
-  useEffect(() => {
-    if (!history.length) return;
-    const baseColor = COLOR_MAP[overall]?.base || "#64748b";
-    const points = history.slice(-40).map(r => ({
-      v: r.CO2eq ?? r["PM2.5"] ?? null
-    })).filter(p => p.v != null);
-    drawSpark(canvasRef.current, points, baseColor);
-  }, [history, overall]);
-
-  const cfg = COLOR_MAP[overall] || { base: "#64748b", grad: ["#64748b","#94a3b8"] };
+  const cls = COLOR_MAP[overall] || "bg-gray-400";
 
   return (
     <div className="aq-card flex flex-col gap-3 relative overflow-hidden">
-      {/* Verlauf-Hintergrund (diagonaler Gradient) */}
-      <div
-        className="absolute inset-0 opacity-15 pointer-events-none"
-        style={{
-          background: `linear-gradient(135deg, ${cfg.grad[0]} 0%, ${cfg.grad[1]} 70%)`
-        }}
-      />
-      <span className="text-[11px] font-semibold tracking-wide text-slate-600 uppercase relative">
-        Gesamtlufqualität
-      </span>
-
-      {!overall ? (
-        <div className="h-10 flex items-center text-slate-500 text-sm relative">Lade…</div>
-      ) : (
-        <div
-          className="h-10 rounded flex items-center px-3 text-sm font-semibold tracking-wide text-white relative shadow-sm"
-          style={{
-            background: `linear-gradient(90deg, ${cfg.grad[0]}, ${cfg.grad[1]})`
-          }}
-        >
-          {overall}
-        </div>
-      )}
-
-      {/* Sparkline + Legende */}
-      <div className="relative">
-        <div className="text-[10px] text-slate-500 mb-1">
-          Mini-Verlauf (CO₂eq* oder PM2.5) – visuelle Tendenz
-        </div>
-        <div className="h-12">
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full"
-            style={{ width: '100%', height: '100%' }}
-          />
-        </div>
+      <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-cyan-300 via-white to-indigo-300 pointer-events-none" />
+      <div className="text-sm uppercase tracking-wide text-slate-600 relative">
+        Gesamtluftqualität
       </div>
-      <div className="text-[9px] text-slate-400 leading-snug relative">
-        * Auswahl fallback: CO2eq → PM2.5 → (leer)<br />
-        Bewertung basiert auf Kernparametern.
+      <div className={`relative px-4 py-3 rounded text-base font-semibold tracking-wide text-slate-900 shadow-inner ${cls}`}>
+        {overall}
+      </div>
+
+      <div className="relative mt-1">
+        {values.length ? (
+          <svg width={width} height={height} className="overflow-visible">
+            <path d={path} fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" />
+            {values.map((v,i) => {
+              const x = i * step;
+              const y = height - (v / max) * height;
+              return <circle key={i} cx={x} cy={y} r="2" fill="#0ea5e9" />;
+            })}
+          </svg>
+        ) : (
+          <div className="text-[10px] text-slate-400">Noch kein Verlauf</div>
+        )}
+      </div>
+      <div className="text-[10px] text-slate-500 tracking-wide">
+        Verlauf (letzte {points.length || 0})
       </div>
     </div>
   );

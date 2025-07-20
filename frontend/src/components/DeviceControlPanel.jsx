@@ -1,17 +1,13 @@
+// src/components/DeviceControlPanel.jsx
 import { useEffect, useState, useCallback } from "react";
 import { fetchDeviceStatus, controlVentilator, controlDiffusor } from "../services/api";
 
-/**
- * Gerätesteuerung mit "optimistic UI":
- * - Sofortiger Button-State beim Klicken
- * - Nach erfolgreichem/fehlschlagendem Request wird (re)validiert
- */
 export default function DeviceControlPanel() {
   const [status, setStatus] = useState({
     ventilator: { status: null },
     diffusor: { status: null }
   });
-  const [loadingKey, setLoadingKey] = useState(null); // "ventilator:on" etc.
+  const [loadingKey, setLoadingKey] = useState(null);
   const [error, setError] = useState(null);
   const [lastActionTs, setLastActionTs] = useState(null);
 
@@ -23,7 +19,6 @@ export default function DeviceControlPanel() {
         diffusor: { status: res.diffusor?.status || null }
       });
     } catch (e) {
-      // Bei Mock einfach ignorieren – oder Fehlermeldung setzen
       setError("Status nicht abrufbar");
     }
   }, []);
@@ -37,11 +32,7 @@ export default function DeviceControlPanel() {
   async function sendAction(device, action) {
     setError(null);
     setLastActionTs(Date.now());
-    const optimistic = action; // "on" | "off" | "auto"
-    setStatus(prev => ({
-      ...prev,
-      [device]: { status: optimistic }
-    }));
+    setStatus(prev => ({ ...prev, [device]: { status: action } }));
     const key = `${device}:${action}`;
     setLoadingKey(key);
     try {
@@ -50,7 +41,6 @@ export default function DeviceControlPanel() {
       } else {
         await controlDiffusor(action);
       }
-      // Revalidate
       await loadStatus();
     } catch (e) {
       setError("Aktion fehlgeschlagen");
@@ -82,15 +72,15 @@ export default function DeviceControlPanel() {
     return (
       <div className="flex flex-col gap-2 p-3 rounded border border-slate-200 bg-white/80">
         <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">{title}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-300 tracking-wide">
-              {st}
-            </span>
+          <span className="text-sm font-semibold text-slate-700">{title}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-300 tracking-wide">
+            {st}
+          </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Btn device={dkey} desired="on"   label="An" />
-          <Btn device={dkey} desired="off"  label="Aus" />
-          <Btn device={dkey} desired="auto" label="Auto" />
+          <Btn device={dkey} desired="on" label="An" />
+          <Btn device={dkey} desired="off" label="Aus" />
+            <Btn device={dkey} desired="auto" label="Auto" />
           <button
             onClick={loadStatus}
             className="px-2 py-1 text-xs rounded border border-slate-300 text-slate-600 bg-white hover:bg-slate-100"

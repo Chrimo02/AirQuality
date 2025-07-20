@@ -1,83 +1,166 @@
 // src/services/api.js
+// Komplett überarbeitete Version mit:
+// - ENV konfigurierbarer Base-URL
+// - Mock-Unterstützung (deine ursprüngliche Logik beibehalten)
+// - Normalizer für Measurement Keys
+// - Reconnect & Heartbeat WebSocket
+// - Farbschema-Caching
+// - Optionale Delta-Fetch Funktion
+// ------------------------------------------------------------
+
 import axios from 'axios';
 
+/* ---------- ENV / Konfiguration ---------- */
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+/* ---------- Axios Client ---------- */
 const http = axios.create({
   baseURL: BASE_URL,
   timeout: 8000
 });
 
-/* Hilfsfunktionen */
+/* ============================================================
+ *  Helper / Utilities
+ * ========================================================== */
+
+/** Zufallszahl für Mock */
 const rand = (min, max, d = 0) =>
   parseFloat((min + Math.random() * (max - min)).toFixed(d));
 
+/** Sicheres JSON Parse */
+function safeParseJSON(str) {
+  try { return JSON.parse(str); } catch { return null; }
+}
+
+/** Key Aliase für Parser-Varianten */
+const KEY_ALIAS = {
+  PM2_5: 'PM2.5',
+  PM1: 'PM1.0',
+  PM10_0: 'PM10'
+  // Weitere Aliase nach Bedarf ergänzen
+};
+
+/** Mappt Messwert-Schlüssel auf kanonische Namen */
+function normalizeMeasurementKeys(obj = {}) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const nk = KEY_ALIAS[k] || k;
+    out[nk] = v;
+  }
+  return out;
+}
+
+/** Normalisiert Live Payload (HTTP & WS) */
+function normalizeLivePayload(raw) {
+  if (!raw) return raw;
+  const copy = { ...raw };
+  copy.measurements = normalizeMeasurementKeys(copy.measurements || {});
+  return copy;
+}
+
+/* ============================================================
+ *  Mock Daten
+ * ========================================================== */
 const mockRating = () => {
-  const keys = ["SEHR GUT","GUT","MAESSIG","SCHLECHT","SEHR SCHLECHT"];
+  const keys = ['SEHR GUT','GUT','MAESSIG','SCHLECHT','SEHR SCHLECHT'];
   return keys[Math.floor(Math.random() * keys.length)];
 };
 
-/* Mock-Erzeugung – inklusive Partikel-Anzahl */
 const mockLive = () => {
   const now = new Date().toISOString();
   const measurements = {
     TEMP: rand(18,26,1),
     HUMID: rand(30,60,0),
     CO2eq: rand(500,1400,0),
-    "PM2.5": rand(2,35,1),
-    "PM1.0": rand(1,20,1),
-    "PM10": rand(5,80,1),
+    'PM2.5': rand(2,35,1),
+    'PM1.0': rand(1,20,1),
+    'PM10': rand(5,80,1),
     VOCAQI: rand(10,180,0),
     bVOCeq: rand(0.3,1.2,2),
     GASest: rand(0.3,1.2,2),
-
-    // Partikel-Anzahl (PC – fiktive Werte)
-    "PC0.3": rand(1000,6000),
-    "PC0.5": rand(800,3500),
-    "PC1.0": rand(400,2000),
-    "PC2.5": rand(100,900),
-    "PC5.0": rand(20,300),
-    "PC10": rand(10,150)
+    'PC0.3': rand(1000,6000),
+    'PC0.5': rand(800,3500),
+    'PC1.0': rand(400,2000),
+    'PC2.5': rand(100,900),
+    'PC5.0': rand(20,300),
+    'PC10': rand(10,150)
   };
-
-  const ratingWrap = (k,val) => ({ value: val, rating: mockRating() });
-
+  const wrap = v => ({ value: v, rating: mockRating() });
   return {
     timestamp: now,
     measurements,
     air_quality_rating: {
-      TEMP: ratingWrap("TEMP", measurements.TEMP),
-      HUMID: ratingWrap("HUMID", measurements.HUMID),
-      CO2eq: ratingWrap("CO2eq", measurements.CO2eq),
-      "PM2.5": ratingWrap("PM2.5", measurements["PM2.5"]),
-      VOCAQI: ratingWrap("VOCAQI", measurements.VOCAQI),
-      bVOCeq: ratingWrap("bVOCeq", measurements.bVOCeq),
-      GASest: ratingWrap("GASest", measurements.GASest)
+      TEMP: wrap(measurements.TEMP),
+      HUMID: wrap(measurements.HUMID),
+      CO2eq: wrap(measurements.CO2eq),
+      'PM2.5': wrap(measurements['PM2.5']),
+      VOCAQI: wrap(measurements.VOCAQI),
+      bVOCeq: wrap(measurements.bVOCeq),
+      GASest: wrap(measurements.GASest)
     },
     overall_quality: mockRating(),
-    session_type: "indoor"
+    session_type: 'indoor'
   };
 };
 
-/* ---- API Funktionen ---- */
+/* ============================================================
+ *  Color Map Cache
+ * ========================================================== */
+let colorMapPromise = null;
+export async function fetchColorMap() {
+  if (USE_MOCK) {
+    return {
+      'SEHR GUT': '#00C851',
+      'GUT': '#7CB342',
+      'MAESSIG': '#FFB300',
+      'SCHLECHT': '#FF8A00',
+      'SEHR SCHLECHT': '#FF4444'
+    };
+  }
+  if (!colorMapPromise) {
+    colorMapPromise = http.get('/air-quality/colors')
+      .then(r => r.data)
+      .catch(err => {
+        colorMapPromise = null;
+        throw err;
+      });
+  }
+  return colorMapPromise;
+}
+
+/* ============================================================
+ *  Live Data (HTTP)
+ * ========================================================== */
 export async function fetchLiveData() {
   if (USE_MOCK) return mockLive();
   const { data } = await http.get('/live-data');
-  return data;
+  return normalizeLivePayload(data);
 }
 
+/* ============================================================
+ *  Sessions
+ * ========================================================== */
 export async function fetchSessions() {
   if (USE_MOCK) {
     return [
       {
         id: 1,
-        name: "Mock Indoor",
-        location: "Wohnzimmer",
+        name: 'Mock Indoor',
+        location: 'Wohnzimmer',
         start_time: new Date(Date.now() - 1000*60*25).toISOString(),
         end_time: null,
         is_active: true,
-        session_type: "indoor"
+        session_type: 'indoor'
+      },
+      {
+        id: 2,
+        name: 'Mock Alt',
+        location: 'Büro',
+        start_time: new Date(Date.now() - 1000*60*120).toISOString(),
+        end_time: new Date(Date.now() - 1000*60*90).toISOString(),
+        is_active: false,
+        session_type: 'indoor'
       }
     ];
   }
@@ -102,7 +185,7 @@ export async function startSession({ name, location, session_type }) {
 }
 
 export async function endSession(sessionId) {
-  if (USE_MOCK) return { message: "Mock beendet" };
+  if (USE_MOCK) return { message: 'Mock beendet' };
   const { data } = await http.put(`/sessions/${sessionId}/end`);
   return data;
 }
@@ -117,16 +200,15 @@ export async function fetchSessionData(sessionId, limit = 500) {
         TEMP: rand(18,26,1),
         HUMID: rand(30,60,0),
         CO2eq: rand(500,1400,0),
-        "PM2.5": rand(2,35,1),
-        "PM1.0": rand(1,20,1),
-        "PM10": rand(5,80,1),
-        "PC2.5": rand(80,900),
+        'PM2.5': rand(2,35,1),
+        'PM1.0': rand(1,20,1),
+        'PM10': rand(5,80,1),
+        'PC2.5': rand(80,900),
         VOCAQI: rand(10,180,0)
       };
     });
   }
   const { data } = await http.get(`/sessions/${sessionId}/data?limit=${limit}`);
-  // Mapping aus API → flache Struktur
   return data.map(row => {
     const p = row.parsed_data || {};
     return {
@@ -134,21 +216,57 @@ export async function fetchSessionData(sessionId, limit = 500) {
       TEMP: p.TEMP,
       HUMID: p.HUMID,
       CO2eq: p.CO2eq,
-      "PM2.5": p["PM2.5"],
-      "PM1.0": p["PM1.0"],
-      "PM10": p["PM10"],
-      "PC2.5": p["PC2.5"],
-      VOCAQI: p.VOCAQI
+      'PM2.5': p['PM2.5'],
+      'PM1.0': p['PM1.0'],
+      'PM10': p['PM10'],
+      'PC2.5': p['PC2.5'],
+      VOCAQI: p.VOCAQI,
+      bVOCeq: p.bVOCeq,
+      GASest: p.GASest
     };
   });
 }
 
-/* Geräte */
+/** Optional: Delta-Laden */
+export async function fetchSessionDataSince(sessionId, isoTimestamp) {
+  if (USE_MOCK) return [];
+  const { data } = await http.get(
+    `/sessions/${sessionId}/data/since/${encodeURIComponent(isoTimestamp)}`
+  );
+  return data.map(row => {
+    const p = row.parsed_data || {};
+    return {
+      timestamp: row.timestamp,
+      TEMP: p.TEMP,
+      HUMID: p.HUMID,
+      CO2eq: p.CO2eq,
+      'PM2.5': p['PM2.5'],
+      'PM1.0': p['PM1.0'],
+      'PM10': p['PM10'],
+      'PC0.3': p['PC0.3'],
+      'PC0.5': p['PC0.5'],
+      'PC1.0': p['PC1.0'],
+      'PC2.5': p['PC2.5'],
+      'PC5.0': p['PC5.0'],
+      'PC10': p['PC10'],
+      VOCAQI: p.VOCAQI,
+      bVOCeq: p.bVOCeq,
+      GASest: p.GASest
+    };
+  });
+}
+
+/* ============================================================
+ *  Geräte
+ * ========================================================== */
+let mockVentStatus = 'off';
+let mockDiffStatus = 'off';
+
 export async function fetchDeviceStatus() {
   if (USE_MOCK) {
     return {
-      ventilator: { name: "Ventilator", status: Math.random() > 0.5 ? "on" : "off", ip: "mock" },
-      diffusor: { name: "Diffusor", status: Math.random() > 0.5 ? "on" : "off", ip: "mock" }
+      ventilator: { name: 'Ventilator', status: mockVentStatus, ip: 'mock' },
+      diffusor: { name: 'Diffusor', status: mockDiffStatus, ip: 'mock' }
     };
   }
   const { data } = await http.get('/devices/status');
@@ -156,37 +274,102 @@ export async function fetchDeviceStatus() {
 }
 
 export async function controlVentilator(action) {
-  if (USE_MOCK) return { message: "Mock", status: action };
+  if (USE_MOCK) {
+    mockVentStatus = action;
+    return { status: mockVentStatus };
+  }
   const { data } = await http.put('/devices/ventilator/control', { action });
   return data;
 }
 
 export async function controlDiffusor(action) {
-  if (USE_MOCK) return { message: "Mock", status: action };
+  if (USE_MOCK) {
+    mockDiffStatus = action;
+    return { status: mockDiffStatus };
+  }
   const { data } = await http.put('/devices/diffusor/control', { action });
   return data;
 }
 
-/* WebSocket */
-let ws;
-export function connectLive(onData, onStateChange) {
+/* ============================================================
+ *  WebSocket Live (Reconnect + Heartbeat)
+ * ========================================================== */
+let ws; // globale Referenz
+
+export function connectLive(onData, onStateChange, opts = {}) {
   if (USE_MOCK) {
     const id = setInterval(() => onData(mockLive()), 3000);
-    onStateChange && onStateChange('MOCK');
+    onStateChange?.('MOCK');
     return () => clearInterval(id);
   }
+
+  const {
+    maxRetries = 6,
+    baseDelay = 500,
+    backoffFactor = 1.8,
+    heartbeatInterval = 25000
+  } = opts;
+
   const url = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data';
-  ws = new WebSocket(url);
-  ws.onopen = () => onStateChange?.('OPEN');
-  ws.onclose = () => onStateChange?.('CLOSED');
-  ws.onerror = () => onStateChange?.('ERROR');
-  ws.onmessage = e => {
-    try {
-      const data = JSON.parse(e.data);
-      onData(data);
-    } catch (err) {
-      console.error('WS parse error', err);
+  let retries = 0;
+  let heartbeatTimer = null;
+
+  function scheduleHeartbeat() {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'PING', ts: Date.now() }));
+        } catch {}
+      }
+    }, heartbeatInterval);
+  }
+
+  function connect() {
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      onStateChange?.('OPEN');
+      retries = 0;
+      scheduleHeartbeat();
+      try {
+        ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() }));
+      } catch {}
+    };
+
+    ws.onmessage = e => {
+      const raw = safeParseJSON(e.data);
+      if (!raw) return;
+      onData(normalizeLivePayload(raw));
+    };
+
+    ws.onerror = () => {
+      onStateChange?.('ERROR');
+    };
+
+    ws.onclose = (ev) => {
+      clearInterval(heartbeatTimer);
+      if (ev.code === 1000) {
+        onStateChange?.('CLOSED');
+        return;
+      }
+      if (retries < maxRetries) {
+        const delay = Math.round(baseDelay * Math.pow(backoffFactor, retries));
+        retries++;
+        onStateChange?.(`RETRY_${retries}`);
+        setTimeout(connect, delay);
+      } else {
+        onStateChange?.('FAILED');
+      }
+    };
+  }
+
+  connect();
+
+  return () => {
+    clearInterval(heartbeatTimer);
+    if (ws && ws.readyState <= 1) {
+      try { ws.close(1000, 'Client close'); } catch {}
     }
   };
-  return () => ws && ws.close(1000, 'Client close');
 }

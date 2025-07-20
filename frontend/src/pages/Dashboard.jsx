@@ -1,12 +1,14 @@
+// src/pages/Dashboard.jsx
 import { useEffect, useState, useRef } from 'react';
 import {
-  fetchLiveData,
-  connectLive,
   fetchSessions,
   startSession,
   endSession,
   fetchSessionData
 } from '../services/api';
+
+import { useLiveStream } from '../hooks/useLiveStream';
+import { useSessionDelta } from '../hooks/useSessionDelta';
 
 import AirQualitySummary from '../components/AirQualitySummary';
 import SessionManager from '../components/SessionManager';
@@ -25,7 +27,6 @@ const METRIC_LABELS = [
   { key: 'GASest', label: 'GASest',          unit: '' }
 ];
 
-// Welche Felder wir für History zusätzlich versuchen mitzunehmen (sofern vorhanden)
 const HISTORY_EXTRA_KEYS = [
   'PM1.0','PM2.5','PM10',
   'PC0.3','PC0.5','PC1.0','PC2.5','PC5.0','PC10',
@@ -35,81 +36,102 @@ const HISTORY_EXTRA_KEYS = [
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export default function Dashboard() {
-  const [live, setLive] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
+  const [selectedSession, setSelectedSession] = useState(null);
+
+  const viewingHistorical = !!selectedSession && !selectedSession.is_active;
+
+  const liveEnabled = !viewingHistorical;
+  const { live, wsState } = useLiveStream(liveEnabled);
+
+  /* Verlauf */
   const [historyData, setHistoryData] = useState([]);
-  const [wsState, setWsState] = useState('CLOSED');
   const historyRef = useRef([]);
 
-  /** Sessions + evtl. Aktive laden */
+  /* Delta Hook nur für aktive Session */
+  const deltaEnabled = !!selectedSession?.is_active;
+  const { rows: sessionRows } = useSessionDelta(selectedSession?.id, deltaEnabled, 15000);
+
+  /* Anzeige-Snapshot */
+  const [displaySnapshot, setDisplaySnapshot] = useState(null);
+  const [frozenSnapshot, setFrozenSnapshot] = useState(null);
+
+  /* Sessions laden */
   useEffect(() => {
     (async () => {
       try {
-        const s = await fetchSessions();
-        setSessions(s);
-        const active = s.find(x => x.is_active);
-        if (active) {
-          setActiveSession(active);
-          const hist = await fetchSessionData(active.id);
-            // hist enthält bereits normalisierte Werte (TEMP,...)
+        const list = await fetchSessions();
+        setSessions(list);
+        const act = list.find(s => s.is_active);
+        if (act) {
+          setActiveSession(act);
+          setSelectedSession(act);
+          // initial History (wird später durch Delta aktualisiert)
+          const hist = await fetchSessionData(act.id);
           historyRef.current = hist;
           setHistoryData(hist);
+          if (hist.length) {
+            setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
+          }
         }
       } catch (e) {
-        console.warn('Sessions konnten nicht geladen werden', e);
+        console.warn('Sessions laden fehlgeschlagen', e);
       }
     })();
   }, []);
 
-  /** Live + WebSocket/Mock Verbindung */
+  /* Delta Rows → History (aktive Session) */
   useEffect(() => {
-    let cleanup;
-    (async () => {
-      try {
-        const first = await fetchLiveData();
-        setLive(first);
-      } catch (e) {
-        console.warn('Erste Live-Daten fehlgeschlagen', e);
-      }
-      cleanup = connectLive(
-        data => {
-          setLive(data);
-          // Nur eigenen Rolling-Verlauf führen, wenn keine aktive Session (sonst DB-History)
-          if (!activeSession) {
-            const entry = {
-              timestamp: data.timestamp,
-              TEMP: data.measurements?.TEMP,
-              HUMID: data.measurements?.HUMID,
-              CO2eq: data.measurements?.CO2eq,
-              'PM2.5': data.measurements?.['PM2.5'],
-              VOCAQI: data.measurements?.VOCAQI
-            };
-            // Zusätzliche Keys dynamisch mappen
-            HISTORY_EXTRA_KEYS.forEach(k => {
-              if (data.measurements?.[k] != null) entry[k] = data.measurements[k];
-            });
+    if (!deltaEnabled) return;
+    historyRef.current = sessionRows;
+    setHistoryData(sessionRows);
+    if (sessionRows.length) {
+      setDisplaySnapshot({ type: 'session', entry: sessionRows[sessionRows.length - 1] });
+    }
+  }, [sessionRows, deltaEnabled]);
 
-            historyRef.current = [
-              ...historyRef.current.slice(-239),
-              entry
-            ];
-            setHistoryData([...historyRef.current]);
-          }
-        },
-        state => setWsState(state)
-      );
-    })();
-    return () => cleanup && cleanup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession?.id]);
+  /* Live -> Rolling History nur für:
+     - Kein selectedSession
+     - oder selectedSession NICHT aktiv (also Live Modus ohne Delta)
+   */
+  useEffect(() => {
+    if (!live) return;
+    if (viewingHistorical) return;
+    if (deltaEnabled) return; // Delta versorgt aktive Session
+    if (!selectedSession) {
+      const entry = buildHistoryEntryFromLive(live);
+      historyRef.current = [...historyRef.current.slice(-239), entry];
+      setHistoryData([...historyRef.current]);
+      setDisplaySnapshot({ type: 'live', entry: live });
+    }
+  }, [live, viewingHistorical, deltaEnabled, selectedSession]);
+
+  function buildHistoryEntryFromLive(data) {
+    const e = {
+      timestamp: data.timestamp,
+      TEMP: data.measurements?.TEMP,
+      HUMID: data.measurements?.HUMID,
+      CO2eq: data.measurements?.CO2eq,
+      'PM2.5': data.measurements?.['PM2.5'],
+      VOCAQI: data.measurements?.VOCAQI,
+      overall_quality: data.overall_quality
+    };
+    HISTORY_EXTRA_KEYS.forEach(k => {
+      if (data.measurements?.[k] != null) e[k] = data.measurements[k];
+    });
+    return e;
+  }
 
   async function handleStartSession({ name, location, session_type }) {
     const newS = await startSession({ name, location, session_type });
     setSessions(s => [newS, ...s.map(x => ({ ...x, is_active: false }))]);
     setActiveSession(newS);
+    setSelectedSession(newS);
     historyRef.current = [];
     setHistoryData([]);
+    setDisplaySnapshot(null);
+    setFrozenSnapshot(null);
   }
 
   async function handleEndSession(id) {
@@ -117,30 +139,124 @@ export default function Dashboard() {
     setSessions(s => s.map(x =>
       x.id === id ? { ...x, is_active: false, end_time: new Date().toISOString() } : x
     ));
+    if (selectedSession?.id === id) {
+      setSelectedSession(prev => prev ? { ...prev, is_active: false } : prev);
+    }
     setActiveSession(null);
-    historyRef.current = [];
-    setHistoryData([]);
+  }
+
+  async function handleSelectSession(session) {
+    if (session.id === selectedSession?.id) {
+      if (!session.is_active && activeSession) {
+        await switchToActiveSession(activeSession);
+      }
+      return;
+    }
+    setSelectedSession(session);
+    const hist = await fetchSessionData(session.id);
+    historyRef.current = hist;
+    setHistoryData(hist);
+
+    if (session.is_active) {
+      setFrozenSnapshot(null);
+      if (hist.length) {
+        setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
+      } else setDisplaySnapshot(null);
+    } else {
+      buildFrozenFromHistory(hist);
+    }
+  }
+
+  async function switchToActiveSession(active) {
+    setSelectedSession(active);
+    const hist = await fetchSessionData(active.id);
+    historyRef.current = hist;
+    setHistoryData(hist);
+    setFrozenSnapshot(null);
+    if (hist.length) {
+      setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
+    } else {
+      setDisplaySnapshot(null);
+    }
+  }
+
+  function buildFrozenFromHistory(hist) {
+    if (!hist.length) {
+      setFrozenSnapshot(null);
+      setDisplaySnapshot(null);
+      return;
+    }
+    const last = hist[hist.length - 1];
+    const measurements = { ...last };
+    delete measurements.timestamp;
+    delete measurements.overall_quality;
+
+    const frozenRatings = {};
+    METRIC_LABELS.forEach(m => {
+      if (measurements[m.key] != null) {
+        frozenRatings[m.key] = { rating: 'FREEZE', value: measurements[m.key] };
+      }
+    });
+
+    const snapshot = {
+      type: 'history-freeze',
+      measurements,
+      air_quality_rating: frozenRatings,
+      overall_quality: null,
+      timestamp: last.timestamp
+    };
+    setFrozenSnapshot(snapshot);
+    setDisplaySnapshot(snapshot);
+  }
+
+  async function revertToLive() {
+    if (activeSession) {
+      await switchToActiveSession(activeSession);
+    } else {
+      setSelectedSession(null);
+      setFrozenSnapshot(null);
+      historyRef.current = [];
+      setHistoryData([]);
+      if (live) {
+        setDisplaySnapshot({ type: 'live', entry: live });
+      } else {
+        setDisplaySnapshot(null);
+      }
+    }
+  }
+
+  let display = null;
+  if (viewingHistorical && frozenSnapshot) {
+    display = frozenSnapshot;
+  } else if (displaySnapshot) {
+    if (displaySnapshot.entry?.measurements) {
+      display = displaySnapshot.entry;
+    } else {
+      display = {
+        measurements: { ...displaySnapshot.entry },
+        air_quality_rating: live?.air_quality_rating || {}
+      };
+    }
+  } else if (live) {
+    display = live;
   }
 
   const lastUpdate = live?.timestamp
     ? new Date(live.timestamp).toLocaleTimeString()
     : '--:--:--';
-  const overall = live?.overall_quality;
 
-  /** ---- Export Funktionen ---- */
+  const overall = viewingHistorical ? null : live?.overall_quality;
+
   function exportJSON() {
+    if (!historyData.length) return;
     const payload = {
       generated_at: new Date().toISOString(),
-      active_session: activeSession || null,
+      selected_session: selectedSession || null,
       history_rows: historyData
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `air_quality_${activeSession?.name || 'live'}_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(url, `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.json`);
   }
 
   function exportCSV() {
@@ -148,21 +264,14 @@ export default function Dashboard() {
     const cols = Object.keys(historyData[0]);
     const lines = [
       cols.join(';'),
-      ...historyData.map(row =>
-        cols.map(c => (row[c] == null ? '' : row[c])).join(';')
-      )
+      ...historyData.map(r => cols.map(c => (r[c] == null ? '' : r[c])).join(';'))
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `air_quality_${activeSession?.name || 'live'}_${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(url, `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.csv`);
   }
 
   async function exportPDF() {
-    // html2canvas + jspdf müssen installiert sein (optional)
     try {
       const { default: html2canvas } = await import('html2canvas');
       const { default: jsPDF } = await import('jspdf');
@@ -176,11 +285,23 @@ export default function Dashboard() {
       const imgW = canvas.width * ratio;
       const imgH = canvas.height * ratio;
       pdf.addImage(img, 'PNG', (pageW - imgW)/2, 20, imgW, imgH - 40);
-      pdf.save(`air_quality_${activeSession?.name || 'live'}_${Date.now()}.pdf`);
+      pdf.save(`air_quality_${selectedSession?.name || 'live'}_${Date.now()}.pdf`);
     } catch (e) {
       alert('PDF Export benötigt html2canvas & jspdf (npm install html2canvas jspdf)');
-      console.error(e);
     }
+  }
+
+  function triggerDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
   }
 
   return (
@@ -191,30 +312,41 @@ export default function Dashboard() {
             <h1 className="text-2xl font-semibold tracking-wide text-slate-800">
               Air Quality Monitor
             </h1>
-            <div className="text-xs text-slate-600 flex items-center gap-3 mt-1">
+            <div className="text-xs text-slate-600 flex items-center gap-3 mt-1 flex-wrap">
               Letztes Update:
               <span className="text-slate-800 font-medium">{lastUpdate}</span>
               <span className="px-2 py-0.5 rounded bg-slate-200 border border-slate-300 text-[10px] tracking-wide">
                 WS: {wsState}{IS_MOCK && ' · MOCK'}
               </span>
-              {activeSession && (
-                <span className="px-2 py-0.5 rounded bg-emerald-200 border border-emerald-300 text-[10px] tracking-wide text-emerald-800">
-                  Session aktiv
+              {selectedSession && (
+                <span className={`px-2 py-0.5 rounded text-[10px] tracking-wide border
+                  ${viewingHistorical
+                    ? 'bg-indigo-200 border-indigo-300 text-indigo-800'
+                    : 'bg-emerald-200 border-emerald-300 text-emerald-800'}`}>
+                  {viewingHistorical ? 'Historische Session' : 'Aktive Session'}
                 </span>
+              )}
+              {viewingHistorical && (
+                <button
+                  onClick={revertToLive}
+                  className="px-2 py-0.5 rounded bg-white border border-slate-300 text-[10px] hover:bg-slate-100"
+                >
+                  Zurück zu Live
+                </button>
               )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={exportCSV}
-              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
               disabled={!historyData.length}
             >
               Export CSV
             </button>
             <button
               onClick={exportJSON}
-              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
               disabled={!historyData.length}
             >
               Export JSON
@@ -230,32 +362,42 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <AirQualitySummary overall={overall} history={historyData} />
+        <AirQualitySummary
+          overall={overall}
+          history={historyData}
+          frozen={viewingHistorical && !!frozenSnapshot}
+        />
         <SessionManager
           activeSession={activeSession}
+          selectedSession={selectedSession}
           sessions={sessions}
           onStart={handleStartSession}
           onEnd={handleEndSession}
+          onSelect={handleSelectSession}
         />
         <DeviceControlPanel />
       </div>
 
       <section className="grid xl:grid-cols-7 md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4">
-        {METRIC_LABELS.map(m => (
-          <SensorMetricCard
-            key={m.key}
-            label={m.label}
-            unit={m.unit}
-            value={
-              live?.measurements?.[m.key] != null
-                ? (typeof live.measurements[m.key] === 'number'
-                    ? live.measurements[m.key].toString()
-                    : live.measurements[m.key])
-                : null
-            }
-            rating={live?.air_quality_rating?.[m.key]?.rating}
-          />
-        ))}
+        {METRIC_LABELS.map(m => {
+          const val = display?.measurements?.[m.key];
+          const rating = viewingHistorical && frozenSnapshot
+            ? frozenSnapshot.air_quality_rating?.[m.key]?.rating || null
+            : live?.air_quality_rating?.[m.key]?.rating || null;
+
+          return (
+            <SensorMetricCard
+              key={m.key}
+              label={m.label}
+              unit={m.unit}
+              value={val != null
+                ? (typeof val === 'number' ? val.toString() : val)
+                : null}
+              rating={rating}
+              frozen={viewingHistorical}
+            />
+          );
+        })}
       </section>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -263,11 +405,20 @@ export default function Dashboard() {
           <HistoryChart
             data={historyData}
             metrics={['TEMP','HUMID','CO2eq','PM2.5','VOCAQI']}
+            frozen={viewingHistorical}
           />
         </div>
         <div className="flex flex-col gap-6">
-          <ParticleChartCard measurements={live?.measurements} type="PM" />
-          <ParticleChartCard measurements={live?.measurements} type="PC" />
+          <ParticleChartCard
+            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            type="PM"
+            frozen={viewingHistorical}
+          />
+          <ParticleChartCard
+            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            type="PC"
+            frozen={viewingHistorical}
+          />
         </div>
       </div>
     </div>

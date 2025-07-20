@@ -1,51 +1,16 @@
 import { useState } from 'react';
-import { fetchSessionData } from '../services/api';
 
-export default function SessionManager({ activeSession, sessions, onStart, onEnd }) {
+export default function SessionManager({
+  activeSession,
+  selectedSession,
+  sessions,
+  onStart,
+  onEnd,
+  onSelect
+}) {
   const [name, setName] = useState('');
-  const [loc, setLoc] = useState('');
+  const [loc, setLoc]   = useState('');
   const [type, setType] = useState('indoor');
-  const [exporting, setExporting] = useState(false);
-
-  async function exportData(format) {
-    if (!activeSession) return;
-    try {
-      setExporting(true);
-      const rows = await fetchSessionData(activeSession.id, 2000);
-
-      if (format === 'json') {
-        const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        triggerDownload(url, `session_${activeSession.id}.json`);
-      } else {
-        const headers = ['timestamp','TEMP','HUMID','CO2eq','PM1.0','PM2.5','PM10','PC2.5','VOCAQI'];
-        const lines = [headers.join(';')];
-        rows.forEach(r => {
-          lines.push(headers.map(h => (r[h] != null ? r[h] : '')).join(';'));
-        });
-        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        triggerDownload(url, `session_${activeSession.id}.csv`);
-      }
-    } catch (e) {
-      console.error('Export fehlgeschlagen', e);
-    } finally {
-      setExporting(false);
-    }
-  }
-
-  function triggerDownload(url, filename) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 200);
-  }
 
   return (
     <div className="aq-card flex flex-col gap-4">
@@ -90,31 +55,22 @@ export default function SessionManager({ activeSession, sessions, onStart, onEnd
           <button
             onClick={() => {
               if (!name.trim()) return;
-              onStart({ name: name.trim(), location: loc.trim() || null, session_type: type });
-              setName(''); setLoc('');
+              onStart({
+                name: name.trim(),
+                location: loc.trim() || null,
+                session_type: type
+              });
+              setName('');
+              setLoc('');
             }}
-            className="btn btn-primary"
+            className="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-sm font-medium text-white transition"
           >Start</button>
         )}
         {activeSession && (
           <button
             onClick={() => onEnd(activeSession.id)}
-            className="btn btn-danger"
+            className="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-sm font-medium text-white transition"
           >Beenden</button>
-        )}
-        {activeSession && (
-          <>
-            <button
-              disabled={exporting}
-              onClick={() => exportData('csv')}
-              className="btn btn-neutral disabled:opacity-50"
-            >{exporting ? '…' : 'Export CSV'}</button>
-            <button
-              disabled={exporting}
-              onClick={() => exportData('json')}
-              className="btn btn-neutral disabled:opacity-50"
-            >{exporting ? '…' : 'Export JSON'}</button>
-          </>
         )}
       </div>
 
@@ -126,19 +82,26 @@ export default function SessionManager({ activeSession, sessions, onStart, onEnd
           <div className="text-[10px] text-slate-400">Keine Sessions</div>
         )}
         <div className="flex flex-wrap gap-2">
-          {sessions.map(s => (
-            <span
-              key={s.id}
-              className={`text-[10px] px-2 py-1 rounded border cursor-default ${
-                s.is_active
-                  ? 'border-cyan-600 text-cyan-700 bg-cyan-100'
-                  : 'border-slate-300 text-slate-500 bg-slate-100'
-              }`}
-              title={s.location || ''}
-            >
-              {s.name}
-            </span>
-          ))}
+          {sessions.map(s => {
+            const isSel = selectedSession && selectedSession.id === s.id;
+            const isAct = s.is_active;
+            return (
+              <button
+                key={s.id}
+                onClick={() => onSelect && onSelect(s)}
+                className={`text-[10px] px-2 py-1 rounded border transition
+                  ${isSel
+                    ? 'border-indigo-600 bg-indigo-100 text-indigo-700'
+                    : isAct
+                      ? 'border-emerald-500 bg-emerald-100 text-emerald-700'
+                      : 'border-slate-300 bg-slate-100 text-slate-500 hover:bg-slate-200'}
+                `}
+                title={`${s.name}${s.location ? ' @ ' + s.location : ''}`}
+              >
+                {s.name}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,24 +1,26 @@
 const RATING_COLORS = {
-  "SEHR GUT": "bg-emerald-500/15 text-emerald-700 border-emerald-400/60",
-  "GUT": "bg-green-500/15 text-green-700 border-green-400/60",
-  "MAESSIG": "bg-amber-500/20 text-amber-700 border-amber-400/60",
-  "SCHLECHT": "bg-orange-500/25 text-orange-700 border-orange-400/60",
-  "SEHR SCHLECHT": "bg-red-500/25 text-red-700 border-red-400/60"
+  "SEHR GUT": "bg-emerald-600/20 text-emerald-300 border-emerald-600/50",
+  "GUT": "bg-green-600/20 text-green-300 border-green-600/50",
+  "MAESSIG": "bg-amber-600/20 text-amber-300 border-amber-600/50",
+  "SCHLECHT": "bg-orange-600/20 text-orange-300 border-orange-600/50",
+  "SEHR SCHLECHT": "bg-red-600/20 text-red-300 border-red-600/50",
+  "FREEZE": "bg-slate-500/20 text-slate-300 border-slate-500/50"
 };
 
-export default function SensorMetricCard({ label, value, unit, rating }) {
-  const ratingCls = rating ? (RATING_COLORS[rating] || "bg-gray-300 text-gray-700 border-gray-400") : "";
+export default function SensorMetricCard({ label, value, unit, rating, frozen }) {
+  const ratingCls = rating ? (RATING_COLORS[rating] || RATING_COLORS["FREEZE"]) : "";
   return (
-    <div className="aq-card flex flex-col gap-1 min-w-[140px]">
-      <div className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+    <div className={`aq-card flex flex-col gap-1 min-w-[140px] ${frozen ? 'opacity-70' : ''}`}>
+      <div className="text-sm font-medium text-slate-300 flex items-center gap-2">
         {label}
+        {frozen && <span className="text-[9px] px-1 py-0.5 rounded bg-slate-600/40 border border-slate-500">Freeze</span>}
       </div>
-      <div className="text-lg font-semibold text-slate-800">
-        {value == null ? '--' : value}{value != null && unit ? <span className="text-sm font-normal ml-1">{unit}</span> : null}
+      <div className="text-xl font-semibold">
+        {value == null ? '--' : value} {unit}
       </div>
       {rating && (
-        <span className={`badge mt-auto border text-[10px] font-bold tracking-wide ${ratingCls}`}>
-          {rating}
+        <span className={`badge mt-auto border ${ratingCls}`}>
+          {rating === 'FREEZE' ? '—' : rating}
         </span>
       )}
     </div>
