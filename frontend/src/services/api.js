@@ -1,70 +1,50 @@
 // src/services/api.js
-// Komplett überarbeitete Version mit:
-// - ENV konfigurierbarer Base-URL
-// - Mock-Unterstützung (deine ursprüngliche Logik beibehalten)
-// - Normalizer für Measurement Keys
-// - Reconnect & Heartbeat WebSocket
-// - Farbschema-Caching
-// - Optionale Delta-Fetch Funktion
-// ------------------------------------------------------------
-
 import axios from 'axios';
 
-/* ---------- ENV / Konfiguration ---------- */
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+/* ---------- ENV ---------- */
+const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
+const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
 
 /* ---------- Axios Client ---------- */
-const http = axios.create({
+export const http = axios.create({
   baseURL: BASE_URL,
   timeout: 8000
 });
 
-/* ============================================================
- *  Helper / Utilities
- * ========================================================== */
-
-/** Zufallszahl für Mock */
+/* ---------- Helpers ---------- */
 const rand = (min, max, d = 0) =>
   parseFloat((min + Math.random() * (max - min)).toFixed(d));
 
-/** Sicheres JSON Parse */
 function safeParseJSON(str) {
   try { return JSON.parse(str); } catch { return null; }
 }
 
-/** Key Aliase für Parser-Varianten */
 const KEY_ALIAS = {
   PM2_5: 'PM2.5',
   PM1: 'PM1.0',
   PM10_0: 'PM10'
-  // Weitere Aliase nach Bedarf ergänzen
 };
 
-/** Mappt Messwert-Schlüssel auf kanonische Namen */
 function normalizeMeasurementKeys(obj = {}) {
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
-    const nk = KEY_ALIAS[k] || k;
-    out[nk] = v;
+    out[KEY_ALIAS[k] || k] = v;
   }
   return out;
 }
 
-/** Normalisiert Live Payload (HTTP & WS) */
 function normalizeLivePayload(raw) {
   if (!raw) return raw;
-  const copy = { ...raw };
-  copy.measurements = normalizeMeasurementKeys(copy.measurements || {});
-  return copy;
+  return {
+    ...raw,
+    measurements: normalizeMeasurementKeys(raw.measurements || {})
+  };
 }
 
-/* ============================================================
- *  Mock Daten
- * ========================================================== */
+/* ---------- Mock Data ---------- */
 const mockRating = () => {
   const keys = ['SEHR GUT','GUT','MAESSIG','SCHLECHT','SEHR SCHLECHT'];
-  return keys[Math.floor(Math.random() * keys.length)];
+  return keys[Math.floor(Math.random()*keys.length)];
 };
 
 const mockLive = () => {
@@ -104,9 +84,7 @@ const mockLive = () => {
   };
 };
 
-/* ============================================================
- *  Color Map Cache
- * ========================================================== */
+/* ---------- Color Map Cache ---------- */
 let colorMapPromise = null;
 export async function fetchColorMap() {
   if (USE_MOCK) {
@@ -121,26 +99,19 @@ export async function fetchColorMap() {
   if (!colorMapPromise) {
     colorMapPromise = http.get('/air-quality/colors')
       .then(r => r.data)
-      .catch(err => {
-        colorMapPromise = null;
-        throw err;
-      });
+      .catch(e => { colorMapPromise = null; throw e; });
   }
   return colorMapPromise;
 }
 
-/* ============================================================
- *  Live Data (HTTP)
- * ========================================================== */
+/* ---------- Live Data (HTTP) ---------- */
 export async function fetchLiveData() {
   if (USE_MOCK) return mockLive();
   const { data } = await http.get('/live-data');
   return normalizeLivePayload(data);
 }
 
-/* ============================================================
- *  Sessions
- * ========================================================== */
+/* ---------- Sessions ---------- */
 export async function fetchSessions() {
   if (USE_MOCK) {
     return [
@@ -148,18 +119,9 @@ export async function fetchSessions() {
         id: 1,
         name: 'Mock Indoor',
         location: 'Wohnzimmer',
-        start_time: new Date(Date.now() - 1000*60*25).toISOString(),
+        start_time: new Date(Date.now()-1000*60*25).toISOString(),
         end_time: null,
         is_active: true,
-        session_type: 'indoor'
-      },
-      {
-        id: 2,
-        name: 'Mock Alt',
-        location: 'Büro',
-        start_time: new Date(Date.now() - 1000*60*120).toISOString(),
-        end_time: new Date(Date.now() - 1000*60*90).toISOString(),
-        is_active: false,
         session_type: 'indoor'
       }
     ];
@@ -193,8 +155,8 @@ export async function endSession(sessionId) {
 export async function fetchSessionData(sessionId, limit = 500) {
   if (USE_MOCK) {
     const base = Date.now();
-    return Array.from({ length: 120 }).map((_, i) => {
-      const ts = new Date(base - (119 - i) * 60000).toISOString();
+    return Array.from({ length: 60 }).map((_, i) => {
+      const ts = new Date(base - (59 - i) * 60000).toISOString();
       return {
         timestamp: ts,
         TEMP: rand(18,26,1),
@@ -227,7 +189,6 @@ export async function fetchSessionData(sessionId, limit = 500) {
   });
 }
 
-/** Optional: Delta-Laden */
 export async function fetchSessionDataSince(sessionId, isoTimestamp) {
   if (USE_MOCK) return [];
   const { data } = await http.get(
@@ -256,9 +217,7 @@ export async function fetchSessionDataSince(sessionId, isoTimestamp) {
   });
 }
 
-/* ============================================================
- *  Geräte
- * ========================================================== */
+/* ---------- Devices ---------- */
 let mockVentStatus = 'off';
 let mockDiffStatus = 'off';
 
@@ -274,27 +233,19 @@ export async function fetchDeviceStatus() {
 }
 
 export async function controlVentilator(action) {
-  if (USE_MOCK) {
-    mockVentStatus = action;
-    return { status: mockVentStatus };
-  }
+  if (USE_MOCK) { mockVentStatus = action; return { status: mockVentStatus }; }
   const { data } = await http.put('/devices/ventilator/control', { action });
   return data;
 }
 
 export async function controlDiffusor(action) {
-  if (USE_MOCK) {
-    mockDiffStatus = action;
-    return { status: mockDiffStatus };
-  }
+  if (USE_MOCK) { mockDiffStatus = action; return { status: mockDiffStatus }; }
   const { data } = await http.put('/devices/diffusor/control', { action });
   return data;
 }
 
-/* ============================================================
- *  WebSocket Live (Reconnect + Heartbeat)
- * ========================================================== */
-let ws; // globale Referenz
+/* ---------- WebSocket Live ---------- */
+let ws;
 
 export function connectLive(onData, onStateChange, opts = {}) {
   if (USE_MOCK) {
@@ -318,41 +269,28 @@ export function connectLive(onData, onStateChange, opts = {}) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify({ type: 'PING', ts: Date.now() }));
-        } catch {}
+        try { ws.send(JSON.stringify({ type: 'PING', ts: Date.now() })); } catch {}
       }
     }, heartbeatInterval);
   }
 
   function connect() {
     ws = new WebSocket(url);
-
     ws.onopen = () => {
       onStateChange?.('OPEN');
       retries = 0;
       scheduleHeartbeat();
-      try {
-        ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() }));
-      } catch {}
+      try { ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() })); } catch {}
     };
-
     ws.onmessage = e => {
       const raw = safeParseJSON(e.data);
       if (!raw) return;
       onData(normalizeLivePayload(raw));
     };
-
-    ws.onerror = () => {
-      onStateChange?.('ERROR');
-    };
-
-    ws.onclose = (ev) => {
+    ws.onerror = () => onStateChange?.('ERROR');
+    ws.onclose = ev => {
       clearInterval(heartbeatTimer);
-      if (ev.code === 1000) {
-        onStateChange?.('CLOSED');
-        return;
-      }
+      if (ev.code === 1000) { onStateChange?.('CLOSED'); return; }
       if (retries < maxRetries) {
         const delay = Math.round(baseDelay * Math.pow(backoffFactor, retries));
         retries++;
@@ -363,9 +301,7 @@ export function connectLive(onData, onStateChange, opts = {}) {
       }
     };
   }
-
   connect();
-
   return () => {
     clearInterval(heartbeatTimer);
     if (ws && ws.readyState <= 1) {

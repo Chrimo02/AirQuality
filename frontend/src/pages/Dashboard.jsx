@@ -33,7 +33,8 @@ const HISTORY_EXTRA_KEYS = [
   'bVOCeq','GASest'
 ];
 
-const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+// Direkter Zugriff auf Vite Env (in Tests wird import.meta.env gemockt)
+const IS_MOCK = (import.meta.env && import.meta.env.VITE_USE_MOCK) === 'true';
 
 export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
@@ -49,7 +50,7 @@ export default function Dashboard() {
   const [historyData, setHistoryData] = useState([]);
   const historyRef = useRef([]);
 
-  /* Delta Hook nur für aktive Session */
+  /* Delta für aktive Session */
   const deltaEnabled = !!selectedSession?.is_active;
   const { rows: sessionRows } = useSessionDelta(selectedSession?.id, deltaEnabled, 15000);
 
@@ -57,7 +58,7 @@ export default function Dashboard() {
   const [displaySnapshot, setDisplaySnapshot] = useState(null);
   const [frozenSnapshot, setFrozenSnapshot] = useState(null);
 
-  /* Sessions laden */
+  /* Sessions initial laden */
   useEffect(() => {
     (async () => {
       try {
@@ -67,7 +68,6 @@ export default function Dashboard() {
         if (act) {
           setActiveSession(act);
           setSelectedSession(act);
-          // initial History (wird später durch Delta aktualisiert)
           const hist = await fetchSessionData(act.id);
           historyRef.current = hist;
           setHistoryData(hist);
@@ -81,7 +81,7 @@ export default function Dashboard() {
     })();
   }, []);
 
-  /* Delta Rows → History (aktive Session) */
+  /* Delta → History bei aktiver Session */
   useEffect(() => {
     if (!deltaEnabled) return;
     historyRef.current = sessionRows;
@@ -91,14 +91,11 @@ export default function Dashboard() {
     }
   }, [sessionRows, deltaEnabled]);
 
-  /* Live -> Rolling History nur für:
-     - Kein selectedSession
-     - oder selectedSession NICHT aktiv (also Live Modus ohne Delta)
-   */
+  /* Live Rolling History (nur ohne aktive / historische Session) */
   useEffect(() => {
     if (!live) return;
     if (viewingHistorical) return;
-    if (deltaEnabled) return; // Delta versorgt aktive Session
+    if (deltaEnabled) return;
     if (!selectedSession) {
       const entry = buildHistoryEntryFromLive(live);
       historyRef.current = [...historyRef.current.slice(-239), entry];
@@ -225,6 +222,7 @@ export default function Dashboard() {
     }
   }
 
+  /* Welche Daten aktuell anzeigen? */
   let display = null;
   if (viewingHistorical && frozenSnapshot) {
     display = frozenSnapshot;
@@ -284,9 +282,9 @@ export default function Dashboard() {
       const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
       const imgW = canvas.width * ratio;
       const imgH = canvas.height * ratio;
-      pdf.addImage(img, 'PNG', (pageW - imgW)/2, 20, imgW, imgH - 40);
+      pdf.addImage(img, 'PNG', (pageW - imgW) / 2, 20, imgW, imgH - 40);
       pdf.save(`air_quality_${selectedSession?.name || 'live'}_${Date.now()}.pdf`);
-    } catch (e) {
+    } catch {
       alert('PDF Export benötigt html2canvas & jspdf (npm install html2canvas jspdf)');
     }
   }
@@ -319,10 +317,12 @@ export default function Dashboard() {
                 WS: {wsState}{IS_MOCK && ' · MOCK'}
               </span>
               {selectedSession && (
-                <span className={`px-2 py-0.5 rounded text-[10px] tracking-wide border
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] tracking-wide border
                   ${viewingHistorical
-                    ? 'bg-indigo-200 border-indigo-300 text-indigo-800'
-                    : 'bg-emerald-200 border-emerald-300 text-emerald-800'}`}>
+                      ? 'bg-indigo-200 border-indigo-300 text-indigo-800'
+                      : 'bg-emerald-200 border-emerald-300 text-emerald-800'}`}
+                >
                   {viewingHistorical ? 'Historische Session' : 'Aktive Session'}
                 </span>
               )}
@@ -385,18 +385,20 @@ export default function Dashboard() {
             ? frozenSnapshot.air_quality_rating?.[m.key]?.rating || null
             : live?.air_quality_rating?.[m.key]?.rating || null;
 
-          return (
-            <SensorMetricCard
-              key={m.key}
-              label={m.label}
-              unit={m.unit}
-              value={val != null
-                ? (typeof val === 'number' ? val.toString() : val)
-                : null}
-              rating={rating}
-              frozen={viewingHistorical}
-            />
-          );
+            return (
+              <SensorMetricCard
+                key={m.key}
+                label={m.label}
+                unit={m.unit}
+                value={
+                  val != null
+                    ? (typeof val === 'number' ? val.toString() : val)
+                    : null
+                }
+                rating={rating}
+                frozen={viewingHistorical}
+              />
+            );
         })}
       </section>
 

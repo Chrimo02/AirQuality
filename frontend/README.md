@@ -10,3 +10,16 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+  Aktion          | Befehl                  |
+| --------------- | ----------------------- |
+| Dev starten     | `npm run dev`           |
+| Build           | `npm run build`         |
+| Lint prüfen     | `npm run lint`          |
+| Lint + Auto-Fix | `npm run lint:fix`      |
+| Tests (Watch)   | `npm test`              |
+| Tests einmal    | `npm run test:once`     |
+| CI Tests        | `npm run test:ci`       |
+| Coverage Report | `npm run test:coverage` |
+| Mutation Tests  | `npm run mutate`        |
