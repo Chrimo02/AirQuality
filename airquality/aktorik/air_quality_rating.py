@@ -19,20 +19,30 @@ class AirQualityRules:
                 'PM2.5': [5, 10, 15, 25],
                 'CO2eq': [600, 800, 1000, 1400],
                 'VOCAQI': [50, 100, 150, 200],
-                'TEMP': [18, 22, 28, 36],
+                'TEMP': {
+                    'SEHR_GUT': (20, 26),
+                    'GUT':  (17, 29),
+                    'MÄSSIG': (14, 32),
+                    'SCHLECHT': (11, 35)
+                },
                 'HUMID': {
-                    'SEHR_GUT': (40, 50),
-                    'GUT': (30, 60),
-                    'MÄSSIG': (20, 70),
-                    'SCHLECHT': (10, 80)
+                    'SEHR_GUT': (40, 60),
+                    'GUT': (30, 65),
+                    'MÄSSIG': (20, 75),
+                    'SCHLECHT': (10, 85)
                 }
             }
         else:
             self.thresholds = {
                 'PM2.5': [10, 15, 25, 35],
-                'CO2eq': [450, 500, 600, 800],
+                'CO2eq': [450, 800, 1200, 2000],
                 'VOCAQI': [100, 200, 300, 400],
-                'TEMP': [10, 20, 30, 35],
+                'TEMP': {
+                    'SEHR_GUT': (18, 26),    
+                    'GUT':      (12, 30),     
+                    'MÄSSIG':   (5, 33),      
+                    'SCHLECHT': (0, 36)      
+                }, 
                 'HUMID': {
                     'SEHR_GUT': (40, 70),
                     'GUT': (30, 80),
@@ -40,10 +50,19 @@ class AirQualityRules:
                     'SCHLECHT': (10, 95)
                 }
             }
+        # Gewichtungen der Parameter nach Wichtigkeit für Luftqualität und Gesundheit
+        self.weights = {
+            'PM2.5': 0.4,      
+            'VOCAQI': 0.25,      
+            'CO2eq': 0.2,      
+            'HUMID': 0.1,       
+            'TEMP': 0.05       
+        }
+
 
     def rate_parameter(self, value: float, param: str) -> AirQuality:
-        if param == 'HUMID':
-            return self.rate_humidity(value)
+        if param in ['TEMP', 'HUMID']:
+            return self.rate_range_parameter(value, param)
         thresholds = self.thresholds[param]
         if value <= thresholds[0]:
             return AirQuality.SEHR_GUT
@@ -56,26 +75,31 @@ class AirQualityRules:
         else:
             return AirQuality.SEHR_SCHLECHT
 
-    def rate_humidity(self, humidity: float) -> AirQuality:
-        t = self.thresholds['HUMID']
-        if t['SEHR_GUT'][0] <= humidity <= t['SEHR_GUT'][1]:
-            return AirQuality.SEHR_GUT
-        elif t['GUT'][0] <= humidity <= t['GUT'][1]:
-            return AirQuality.GUT
-        elif t['MÄSSIG'][0] <= humidity <= t['MÄSSIG'][1]:
-            return AirQuality.MÄSSIG
-        elif t['SCHLECHT'][0] <= humidity <= t['SCHLECHT'][1]:
-            return AirQuality.SCHLECHT
-        else:
-            return AirQuality.SEHR_SCHLECHT
+    def rate_range_parameter(self, value: float, param: str) -> AirQuality:
+        param_thresholds = self.thresholds[param]
+        for category in ['SEHR_GUT', 'GUT', 'MÄSSIG', 'SCHLECHT']:
+            min_val, max_val = param_thresholds[category]
+            if min_val <= value <= max_val:
+                return AirQuality[category]
+        return AirQuality.SEHR_SCHLECHT
 
     def get_overall_air_quality(self, measurements: dict[str, float]) -> AirQuality:
-        overall = AirQuality.SEHR_GUT
-        for param, value in measurements.items():
+        total_weight = 0.0
+        weighted_sum = 0.0
+        for param, weight in self.weights.items():
+            if param not in measurements:
+                continue
+            value = measurements[param]
             rating = self.rate_parameter(value, param)
-            if rating.value < overall.value:
-                overall = rating
-        return overall
+            weighted_sum += rating.value * weight
+            total_weight += weight
+        if total_weight == 0:
+            return AirQuality.SEHR_SCHLECHT
+        avg_score = weighted_sum / total_weight
+        rating_value = round(avg_score)
+        score = max(1, min(5, rating_value))
+        return AirQuality(score)
+
 
 def air_quality_to_string(quality: AirQuality) -> str:
     mapping = {
