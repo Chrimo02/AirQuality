@@ -39,8 +39,8 @@ websocket_connections = []
 MQTT_BROKER   = "172.20.10.4"
 MQTT_PORT     = 1883
 MQTT_TOPIC    = "airquality/command/led"
-VENTILATOR_IP = "172.20.10.11"
-DIFFUSOR_IP = "172.20.10.10"
+VENTILATOR_IP = "172.20.10.10"
+DIFFUSOR_IP = "172.20.10.11"
 TAPO_EMAIL = "airqualitythws@gmail.com"
 TAPO_PASSWORD = "P20ro25g$"
 ventilator_auto = True
@@ -171,6 +171,7 @@ async def startup_event():
         mqtt_client = None
     
     asyncio.create_task(live_data_loop())
+    asyncio.create_task(mqtt_reconnect_loop())
 
 @app.websocket("/ws/live-data")
 async def websocket_endpoint(websocket: WebSocket):
@@ -199,7 +200,7 @@ async def broadcast_live_data(data: Dict[str, Any]):
                 websocket_connections.remove(websocket)
 
 async def live_data_loop():
-    global current_session_id
+    global current_session_id, mqtt_client
     global ventilator_auto, diffusor_auto, last_vent_state, last_diff_state
 
     while True:
@@ -236,7 +237,8 @@ async def live_data_loop():
                 try:
                     mqtt_client.publish(overall_quality_str)
                 except Exception as e:
-                    print(f"Fehler beim MQTT Publish: {e}")
+                    print(f"Fehler beim MQTT Publish: {e} - MQTT Client wird neu verbunden")
+                    mqtt_client = None # löst den reconnect im mqtt_reconnect_loop() aus
 
             # Automatische Steuerung
             control_rules = get_air_control_rules()
@@ -300,6 +302,18 @@ async def live_data_loop():
             print(f"Error in live data loop: {e}")
             await asyncio.sleep(5)
 
+async def mqtt_reconnect_loop():
+    #Versucht alle 30 Sekunden, den MQTT-Client neu zu verbinden, falls mqtt_client aktuell None ist.
+
+    global mqtt_client
+    while True:
+        if mqtt_client is None:
+            try:
+                mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
+                print(f"[MQTT] Reconnected to broker at {MQTT_BROKER}:{MQTT_PORT}")
+            except Exception as e:
+                print(f"[MQTT] Reconnect failed: {e}")
+        await asyncio.sleep(30)
 
 # API Endpoints
 @app.get("/")

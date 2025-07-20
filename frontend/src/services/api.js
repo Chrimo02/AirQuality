@@ -4,219 +4,189 @@ import axios from 'axios';
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const apiClient = axios.create({
+const http = axios.create({
   baseURL: BASE_URL,
   timeout: 8000
 });
 
-/**
- * Hilfsfunktion: Backend-Live-Payload => flaches Objekt wie deine alte Struktur.
- * Backend liefert:
- * {
- *   timestamp,
- *   measurements: { TEMP, HUMID, ... },
- *   air_quality_rating: { ... },
- *   overall_quality,
- *   ...
- * }
- */
-function mapLivePayload(payload) {
-  if (!payload || typeof payload !== 'object') return {};
-  const {
-    timestamp,
-    measurements = {},
-    overall_quality,
-    overall_color,
-    air_quality_rating,
-    session_type
-  } = payload;
+/* Hilfsfunktionen */
+const rand = (min, max, d = 0) =>
+  parseFloat((min + Math.random() * (max - min)).toFixed(d));
+
+const mockRating = () => {
+  const keys = ["SEHR GUT","GUT","MAESSIG","SCHLECHT","SEHR SCHLECHT"];
+  return keys[Math.floor(Math.random() * keys.length)];
+};
+
+/* Mock-Erzeugung – inklusive Partikel-Anzahl */
+const mockLive = () => {
+  const now = new Date().toISOString();
+  const measurements = {
+    TEMP: rand(18,26,1),
+    HUMID: rand(30,60,0),
+    CO2eq: rand(500,1400,0),
+    "PM2.5": rand(2,35,1),
+    "PM1.0": rand(1,20,1),
+    "PM10": rand(5,80,1),
+    VOCAQI: rand(10,180,0),
+    bVOCeq: rand(0.3,1.2,2),
+    GASest: rand(0.3,1.2,2),
+
+    // Partikel-Anzahl (PC – fiktive Werte)
+    "PC0.3": rand(1000,6000),
+    "PC0.5": rand(800,3500),
+    "PC1.0": rand(400,2000),
+    "PC2.5": rand(100,900),
+    "PC5.0": rand(20,300),
+    "PC10": rand(10,150)
+  };
+
+  const ratingWrap = (k,val) => ({ value: val, rating: mockRating() });
 
   return {
-    ...measurements,          // TEMP, HUMID, CO2eq usw.
-    timestamp,
-    overall_quality,
-    overall_color,
-    session_type,
-    air_quality_rating
+    timestamp: now,
+    measurements,
+    air_quality_rating: {
+      TEMP: ratingWrap("TEMP", measurements.TEMP),
+      HUMID: ratingWrap("HUMID", measurements.HUMID),
+      CO2eq: ratingWrap("CO2eq", measurements.CO2eq),
+      "PM2.5": ratingWrap("PM2.5", measurements["PM2.5"]),
+      VOCAQI: ratingWrap("VOCAQI", measurements.VOCAQI),
+      bVOCeq: ratingWrap("bVOCeq", measurements.bVOCeq),
+      GASest: ratingWrap("GASest", measurements.GASest)
+    },
+    overall_quality: mockRating(),
+    session_type: "indoor"
   };
+};
+
+/* ---- API Funktionen ---- */
+export async function fetchLiveData() {
+  if (USE_MOCK) return mockLive();
+  const { data } = await http.get('/live-data');
+  return data;
 }
 
-// ---------- MOCK HILFSFUNKTION ----------
-const randBetween = (min, max, decimals = 0) =>
-  parseFloat((min + Math.random() * (max - min)).toFixed(decimals));
-
-// ---------- LIVE / LATEST ----------
-export async function fetchLatestSensor() {
+export async function fetchSessions() {
   if (USE_MOCK) {
-    const now = new Date().toISOString();
-    return {
-      TEMP: randBetween(18, 26, 1),
-      HUMID: Math.round(randBetween(30, 70)),
-      ATM: randBetween(980, 1020, 1),
-      VOCAQI: randBetween(20, 100, 1),
-      bVOCeq: randBetween(0.1, 1.1, 2),
-      GASest: randBetween(0.1, 1.1, 2),
-      CO2eq: Math.round(randBetween(400, 2000)),
-      timestamp: now
-    };
-  }
-  const res = await apiClient.get('/live-data');
-  return mapLivePayload(res.data);
-}
-
-/**
- * History:
- * Dein Backend hat (noch) keine /sensor/history Route.
- * Wir liefern leer zurück. Die laufende History pflegst du weiterhin im Dashboard
- * durch Append der Live-Frames (wie bisher).
- */
-export async function fetchSensorHistory() {
-  if (USE_MOCK) {
-    const now = Date.now();
-    return Array.from({ length: 12 }).map((_, i) => ({
-      timestamp: new Date(now - (11 - i) * 5 * 60 * 1000).toISOString(),
-      TEMP: randBetween(18, 26, 1),
-      HUMID: Math.round(randBetween(30, 70)),
-      CO2eq: Math.round(randBetween(400, 2000))
-    }));
-  }
-  return []; // placeholder – echte History erzeugst du client-seitig
-}
-
-// ---------- WEBSOCKET ----------
-export function createWebSocket(onMessageCallback) {
-  if (USE_MOCK) {
-    // Simulierter Stream
-    fetchLatestSensor().then(onMessageCallback);
-    const iv = setInterval(async () => {
-      onMessageCallback(await fetchLatestSensor());
-    }, 5000);
-    return { close: () => clearInterval(iv) };
-  }
-
-  const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data';
-  const socket = new WebSocket(wsUrl);
-
-  socket.onopen = () => console.log('[WS] Verbunden:', wsUrl);
-  socket.onmessage = evt => {
-    try {
-      const raw = JSON.parse(evt.data);
-      onMessageCallback(mapLivePayload(raw));
-    } catch (e) {
-      console.error('[WS] Parse-Fehler', e);
-    }
-  };
-  socket.onerror = err => console.error('[WS] Fehler', err);
-  socket.onclose = ev =>
-    console.log('[WS] Geschlossen', ev.code, ev.reason || '');
-
-  return socket;
-}
-
-// ---------- ENVIRONMENTS (Dummy) ----------
-/**
- * Dein Frontend erwartet Environments, Backend hat dieses Konzept nicht.
- * Wir liefern einfach einen statischen Default.
- */
-export async function fetchEnvironments() {
-  if (USE_MOCK) {
-    return [
-      { id: 'default', name: 'Standard-Raum' }
-    ];
-  }
-  return [{ id: 'default', name: 'Standard-Raum' }];
-}
-
-export async function createEnvironment(name) {
-  // Nur lokal „anlegen“
-  return { id: `env-${Date.now()}`, name: name || 'Neuer Raum' };
-}
-
-// ---------- SESSIONS ----------
-export async function fetchSessions(/* envId ignoriert */) {
-  if (USE_MOCK) {
-    const now = Date.now();
     return [
       {
         id: 1,
-        name: 'Mock Session',
-        start_time: new Date(now - 3_600_000).toISOString(),
+        name: "Mock Indoor",
+        location: "Wohnzimmer",
+        start_time: new Date(Date.now() - 1000*60*25).toISOString(),
         end_time: null,
-        is_active: true
+        is_active: true,
+        session_type: "indoor"
       }
     ];
   }
-  const res = await apiClient.get('/sessions');
-  return res.data;
+  const { data } = await http.get('/sessions');
+  return data;
 }
 
-export async function startSession(/* envId */) {
+export async function startSession({ name, location, session_type }) {
   if (USE_MOCK) {
     return {
       id: Date.now(),
-      name: 'Mock Session',
+      name,
+      location: location || null,
       start_time: new Date().toISOString(),
       end_time: null,
-      is_active: true
+      is_active: true,
+      session_type
     };
   }
-  // Dein Backend erwartet name + session_type mindestens.
-  const payload = {
-    name: 'Neue Session',
-    session_type: 'indoor'
-  };
-  const res = await apiClient.post('/sessions', payload);
-  return res.data;
+  const { data } = await http.post('/sessions', { name, location, session_type });
+  return data;
 }
 
-export async function stopSession(sessionId) {
-  if (USE_MOCK) {
-    return { message: 'Session beendet (mock)' };
-  }
-  const res = await apiClient.put(`/sessions/${sessionId}/end`);
-  return res.data;
+export async function endSession(sessionId) {
+  if (USE_MOCK) return { message: "Mock beendet" };
+  const { data } = await http.put(`/sessions/${sessionId}/end`);
+  return data;
 }
 
-// ---------- SESSION DATA ----------
-/**
- * Holt Messpunkte einer Session und mappt numerische Felder aus parsed_data
- * in die flache Ebene (TEMP, HUMID, CO2eq, PM2.5, ... falls vorhanden).
- */
-export async function fetchSessionData(sessionId, /* agg ignoriert */) {
+export async function fetchSessionData(sessionId, limit = 500) {
   if (USE_MOCK) {
-    return Array.from({ length: 20 }).map((_, i) => {
-      const t = Date.now() - (19 - i) * 60_000;
+    const base = Date.now();
+    return Array.from({ length: 120 }).map((_, i) => {
+      const ts = new Date(base - (119 - i) * 60000).toISOString();
       return {
-        timestamp: new Date(t).toISOString(),
-        TEMP: randBetween(20, 24, 1),
-        HUMID: Math.round(randBetween(40, 55)),
-        CO2eq: Math.round(randBetween(450, 1200))
+        timestamp: ts,
+        TEMP: rand(18,26,1),
+        HUMID: rand(30,60,0),
+        CO2eq: rand(500,1400,0),
+        "PM2.5": rand(2,35,1),
+        "PM1.0": rand(1,20,1),
+        "PM10": rand(5,80,1),
+        "PC2.5": rand(80,900),
+        VOCAQI: rand(10,180,0)
       };
     });
   }
-  const res = await apiClient.get(`/sessions/${sessionId}/data?limit=500`);
-  const rows = res.data || [];
-  return rows
-    .map(row => {
-      const base = { timestamp: row.timestamp };
-      const parsed = row.parsed_data || {};
-      // Füge alle numerischen Felder (float/int) hinzu
-      Object.entries(parsed).forEach(([k, v]) => {
-        if (typeof v === 'number' && !Number.isNaN(v)) {
-          base[k] = v;
-        }
-      });
-      return base;
-    })
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const { data } = await http.get(`/sessions/${sessionId}/data?limit=${limit}`);
+  // Mapping aus API → flache Struktur
+  return data.map(row => {
+    const p = row.parsed_data || {};
+    return {
+      timestamp: row.timestamp,
+      TEMP: p.TEMP,
+      HUMID: p.HUMID,
+      CO2eq: p.CO2eq,
+      "PM2.5": p["PM2.5"],
+      "PM1.0": p["PM1.0"],
+      "PM10": p["PM10"],
+      "PC2.5": p["PC2.5"],
+      VOCAQI: p.VOCAQI
+    };
+  });
 }
 
-// ---------- DEVICES (Stub / Optional) ----------
-/**
- * Wenn du später echte Device-Endpunkte anbinden willst:
- *  - GET /devices/status
- *  - PUT /devices/ventilator/control {action:"on"|...}
- *  - PUT /devices/diffusor/control {action:"on"|...}
- * Momentan bleiben deine vorhandenen mocks in services/devices.js.
- */
+/* Geräte */
+export async function fetchDeviceStatus() {
+  if (USE_MOCK) {
+    return {
+      ventilator: { name: "Ventilator", status: Math.random() > 0.5 ? "on" : "off", ip: "mock" },
+      diffusor: { name: "Diffusor", status: Math.random() > 0.5 ? "on" : "off", ip: "mock" }
+    };
+  }
+  const { data } = await http.get('/devices/status');
+  return data;
+}
 
+export async function controlVentilator(action) {
+  if (USE_MOCK) return { message: "Mock", status: action };
+  const { data } = await http.put('/devices/ventilator/control', { action });
+  return data;
+}
+
+export async function controlDiffusor(action) {
+  if (USE_MOCK) return { message: "Mock", status: action };
+  const { data } = await http.put('/devices/diffusor/control', { action });
+  return data;
+}
+
+/* WebSocket */
+let ws;
+export function connectLive(onData, onStateChange) {
+  if (USE_MOCK) {
+    const id = setInterval(() => onData(mockLive()), 3000);
+    onStateChange && onStateChange('MOCK');
+    return () => clearInterval(id);
+  }
+  const url = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data';
+  ws = new WebSocket(url);
+  ws.onopen = () => onStateChange?.('OPEN');
+  ws.onclose = () => onStateChange?.('CLOSED');
+  ws.onerror = () => onStateChange?.('ERROR');
+  ws.onmessage = e => {
+    try {
+      const data = JSON.parse(e.data);
+      onData(data);
+    } catch (err) {
+      console.error('WS parse error', err);
+    }
+  };
+  return () => ws && ws.close(1000, 'Client close');
+}
