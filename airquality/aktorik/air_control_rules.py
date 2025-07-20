@@ -32,12 +32,12 @@ class AirControlRules:
     def diffusor_should_be_on(self, measurements: dict[str, float]) -> bool:
         if self.session_type != SessionType.INDOOR:
             return False
-
-        humid = self.rules.rate_parameter(measurements.get('HUMID', 0), 'HUMID')
+ 
+        humidity_value = measurements.get('HUMID', 0)
         voc = self.rules.rate_parameter(measurements.get('VOCAQI', 0), 'VOCAQI')
         pm25 = self.rules.rate_parameter(measurements.get('PM2.5', 0), 'PM2.5')
 
-        return humid in [AirQuality.SCHLECHT, AirQuality.MÄSSIG] and \
+        return humidity_value < 30 and \
                voc in [AirQuality.SEHR_GUT, AirQuality.GUT] and \
                pm25 in [AirQuality.SEHR_GUT, AirQuality.GUT, AirQuality.MÄSSIG]
 
@@ -49,6 +49,6 @@ class AirControlRules:
         voc = self.rules.rate_parameter(measurements.get('VOCAQI', 0), 'VOCAQI')
         pm25 = self.rules.rate_parameter(measurements.get('PM2.5', 0), 'PM2.5')
 
-        return humid in [AirQuality.GUT, AirQuality.SEHR_GUT] or \
+        return humid in [AirQuality.SEHR_GUT] or \
                voc in [AirQuality.SCHLECHT, AirQuality.SEHR_SCHLECHT] or \
                pm25 in [AirQuality.SCHLECHT, AirQuality.SEHR_SCHLECHT]
