@@ -41,7 +41,7 @@ MQTT_PORT     = 1883
 MQTT_TOPIC    = "airquality/command/led"
 VENTILATOR_IP = "172.20.10.5"
 DIFFUSOR_IP = "172.20.10.6"
-TAPO_EMAIL = "airqualitythws@gmail.com"
+TAPO_EMAIL = "thwsairquality@gmail.com"
 TAPO_PASSWORD = "P20ro25g$"
 ventilator_auto = True
 diffusor_auto = True
@@ -178,7 +178,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     websocket_connections.append(websocket)
     try:
-        await websocket.receive()
+        await websocket.receive_text()
     finally:
         if websocket in websocket_connections:
             websocket_connections.remove(websocket)
