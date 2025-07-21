@@ -3,7 +3,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: DOCKERFILE_backend
+      dockerfile: DOCKERFILE.backend
     container_name: airquality-api
     ports:
       - "8000:8000"
@@ -15,8 +15,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: DOCKERFILE_frontend
+      context: ../frontend
+      dockerfile: DOCKERFILE.frontend
     container_name: airquality-frontend
     ports:
       - "3000:80"

@@ -8,29 +8,25 @@ export function useLiveStream(active = true, options = {}) {
   const cleanupRef = useRef(null);
 
   useEffect(() => {
-    if (!active) return;
-    let mounted = true;
-
-    (async () => {
-      try {
-        const first = await fetchLiveData();
-        if (mounted) setLive(first);
-      } catch {
-        // optional: setWsState('HTTP_FAIL');
-      }
-    })();
-
+    console.log('[useLiveStream] useEffect, active=', active)
+    if (!active) return
+    let mounted = true
+    // 1) Initialer HTTP‑Snapshot
+    fetchLiveData()
+      .then(first => mounted && setLive(first))
+      .catch(() => console.warn('[useLiveStream] HTTP initial load failed'))
+    // 2) WebSocket starten
     cleanupRef.current = connectLive(
-      payload => { if (mounted) setLive(payload); },
-      state => setWsState(state),
-      options
-    );
-
+      payload => mounted && setLive(payload),
+      state   => setWsState(state)
+    )
     return () => {
-      mounted = false;
-      if (cleanupRef.current) cleanupRef.current();
-    };
-  }, [active, options.maxRetries, options.baseDelay]);
-
-  return { live, wsState };
+      console.log('[useLiveStream] cleanup')
+      mounted = false
+      cleanupRef.current?.()
+    }
+  }, [active])
+  return { live, wsState }
 }
+
+
