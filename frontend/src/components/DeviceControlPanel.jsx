@@ -1,40 +1,37 @@
 // src/components/DeviceControlPanel.jsx
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { fetchDeviceStatus, controlVentilator, controlDiffusor } from "../services/api";
 
 export default function DeviceControlPanel() {
-  const [status, setStatus] = useState({
-    ventilator: { status: null },
-    diffusor: { status: null }
-  });
+  const [status, setStatus] = useState({ ventilator: null, diffusor: null });
   const [loadingKey, setLoadingKey] = useState(null);
   const [error, setError] = useState(null);
   const [lastActionTs, setLastActionTs] = useState(null);
 
   const loadStatus = useCallback(async () => {
     try {
+      setError(null);
       const res = await fetchDeviceStatus();
       setStatus({
-        ventilator: { status: res.ventilator?.status || null },
-        diffusor: { status: res.diffusor?.status || null }
+        ventilator: res.ventilator?.status || null,
+        diffusor:  res.diffusor?.status   || null
       });
     } catch (e) {
-      setError("Status nicht abrufbar");
+      console.warn("Gerätestatus konnte nicht geladen werden:", e);
+      setError("Status nicht verfügbar");
     }
   }, []);
 
   useEffect(() => {
-    loadStatus();
-    const iv = setInterval(loadStatus, 15000);
-    return () => clearInterval(iv);
+    // Lade den Status nach 1 Sekunde (kannst du auch direkt ohne Delay aufrufen)
+    const timer = setTimeout(loadStatus, 1000);
+    return () => clearTimeout(timer);
   }, [loadStatus]);
 
   async function sendAction(device, action) {
     setError(null);
     setLastActionTs(Date.now());
-    setStatus(prev => ({ ...prev, [device]: { status: action } }));
-    const key = `${device}:${action}`;
-    setLoadingKey(key);
+    setLoadingKey(`${device}:${action}`);
     try {
       if (device === "ventilator") {
         await controlVentilator(action);
@@ -43,6 +40,7 @@ export default function DeviceControlPanel() {
       }
       await loadStatus();
     } catch (e) {
+      console.warn("Aktion fehlgeschlagen:", e);
       setError("Aktion fehlgeschlagen");
     } finally {
       setLoadingKey(null);
@@ -50,53 +48,71 @@ export default function DeviceControlPanel() {
   }
 
   const Btn = ({ device, desired, label }) => {
-    const active = status[device].status === desired;
-    const busy = loadingKey === `${device}:${desired}`;
+    const isActive = status[device] === desired;
+    const busy    = loadingKey === `${device}:${desired}`;
     return (
       <button
         onClick={() => sendAction(device, desired)}
         disabled={busy}
         className={`px-3 py-1.5 rounded text-xs font-semibold border transition tracking-wide
-          ${active
+          ${isActive
             ? "bg-cyan-600 text-white border-cyan-600"
             : "bg-white text-cyan-600 border-cyan-400 hover:bg-cyan-50"}
-          disabled:opacity-50`}
+          ${busy ? "opacity-50" : ""}`}
       >
         {busy ? "…" : label}
       </button>
     );
   };
 
-  const DeviceRow = ({ title, dkey }) => {
-    const st = status[dkey].status ? status[dkey].status.toUpperCase() : "—";
-    return (
-      <div className="flex flex-col gap-2 p-3 rounded border border-slate-200 bg-white/80">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">{title}</span>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-300 tracking-wide">
-            {st}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Btn device={dkey} desired="on" label="An" />
-          <Btn device={dkey} desired="off" label="Aus" />
-            <Btn device={dkey} desired="auto" label="Auto" />
-          <button
-            onClick={loadStatus}
-            className="px-2 py-1 text-xs rounded border border-slate-300 text-slate-600 bg-white hover:bg-slate-100"
-            title="Neu laden"
-          >⟳</button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="aq-card flex flex-col gap-4">
       <h3 className="font-semibold text-sm text-slate-700 tracking-wide">Gerätesteuerung</h3>
-      {error && <div className="text-xs text-amber-600">{error}</div>}
-      <DeviceRow title="Ventilator" dkey="ventilator" />
-      <DeviceRow title="Diffusor" dkey="diffusor" />
+      {error && <div className="text-red-600 text-xs">{error}</div>}
+      {!status.ventilator && !error && <div className="text-xs">Lade…</div>}
+
+      {status.ventilator && (
+        <>
+          <div className="flex flex-col gap-2 p-3 rounded border bg-white/80">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">Ventilator</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-300 tracking-wide">
+                {status.ventilator.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Btn device="ventilator" desired="on"  label="An" />
+              <Btn device="ventilator" desired="off" label="Aus" />
+              <Btn device="ventilator" desired="auto" label="Auto" />
+              <button
+                onClick={loadStatus}
+                className="px-2 py-1 text-xs rounded border border-slate-300 text-slate-600 bg-white hover:bg-slate-100"
+                title="Neu laden"
+              >⟳</button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 p-3 rounded border bg-white/80">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">Diffusor</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-300 tracking-wide">
+                {status.diffusor.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Btn device="diffusor" desired="on"  label="An" />
+              <Btn device="diffusor" desired="off" label="Aus" />
+              <Btn device="diffusor" desired="auto" label="Auto" />
+              <button
+                onClick={loadStatus}
+                className="px-2 py-1 text-xs rounded border border-slate-300 text-slate-600 bg-white hover:bg-slate-100"
+                title="Neu laden"
+              >⟳</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {lastActionTs && (
         <div className="text-[10px] text-slate-500">
           Letzte Aktion: {new Date(lastActionTs).toLocaleTimeString()}
