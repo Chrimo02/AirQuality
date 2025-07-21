@@ -1,54 +1,66 @@
-// src/services/api.js
-import axios from 'axios';
+import axios from 'axios'
+import axiosRetry from 'axios-retry'
 
 /* ---------- ENV ---------- */
-const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
-const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+export const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true'
+export const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000'
 
-/* ---------- Axios Client ---------- */
+/* ---------- Axios Client + Retry + Interceptor ---------- */
 export const http = axios.create({
   baseURL: BASE_URL,
   timeout: 8000
-});
+})
+axiosRetry(http, {
+  retries: 2,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: err =>
+    axiosRetry.isNetworkError(err) || err.code === 'ECONNABORTED'
+})
+http.interceptors.response.use(
+  res => res,
+  err => {
+    console.warn('[HTTP INTERCEPTOR] Fehler:', err.config?.url, err.message)
+    return Promise.reject(err)
+  }
+)
+
+/* ---------- Neue Session‑Info Endpoint ---------- */
+export async function fetchCurrentSessionInfo() {
+  if (USE_MOCK) {
+    return { session_id: null, session_type: 'indoor' }
+  }
+  const { data } = await http.get('/current-session-info')
+  return data
+}
 
 /* ---------- Helpers ---------- */
 const rand = (min, max, d = 0) =>
-  parseFloat((min + Math.random() * (max - min)).toFixed(d));
-
+  parseFloat((min + Math.random() * (max - min)).toFixed(d))
 function safeParseJSON(str) {
-  try { return JSON.parse(str); } catch { return null; }
-}
-
-const KEY_ALIAS = {
-  PM2_5: 'PM2.5',
-  PM1: 'PM1.0',
-  PM10_0: 'PM10'
-};
-
-function normalizeMeasurementKeys(obj = {}) {
-  const out = {};
-  for (const [k, v] of Object.entries(obj)) {
-    out[KEY_ALIAS[k] || k] = v;
+  try {
+    return JSON.parse(str)
+  } catch {
+    return null
   }
-  return out;
 }
-
+const KEY_ALIAS = { PM2_5: 'PM2.5', PM1: 'PM1.0', PM10_0: 'PM10' }
+function normalizeMeasurementKeys(obj = {}) {
+  const out = {}
+  for (const [k, v] of Object.entries(obj)) out[KEY_ALIAS[k] || k] = v
+  return out
+}
 function normalizeLivePayload(raw) {
-  if (!raw) return raw;
-  return {
-    ...raw,
-    measurements: normalizeMeasurementKeys(raw.measurements || {})
-  };
+  if (!raw) return raw
+  return { ...raw, measurements: normalizeMeasurementKeys(raw.measurements || {}) }
 }
 
-/* ---------- Mock Data ---------- */
+/* ---------- Mock Live Data ---------- */
 const mockRating = () => {
-  const keys = ['SEHR GUT','GUT','MAESSIG','SCHLECHT','SEHR SCHLECHT'];
-  return keys[Math.floor(Math.random()*keys.length)];
-};
-
+  const keys = ['SEHR GUT','GUT','MAESSIG','SCHLECHT','SEHR SCHLECHT']
+  return keys[Math.floor(Math.random()*keys.length)]
+}
 const mockLive = () => {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString()
   const measurements = {
     TEMP: rand(18,26,1),
     HUMID: rand(30,60,0),
@@ -65,8 +77,8 @@ const mockLive = () => {
     'PC2.5': rand(100,900),
     'PC5.0': rand(20,300),
     'PC10': rand(10,150)
-  };
-  const wrap = v => ({ value: v, rating: mockRating() });
+  }
+  const wrap = v => ({ value: v, rating: mockRating() })
   return {
     timestamp: now,
     measurements,
@@ -81,82 +93,56 @@ const mockLive = () => {
     },
     overall_quality: mockRating(),
     session_type: 'indoor'
-  };
-};
-
-/* ---------- Color Map Cache ---------- */
-let colorMapPromise = null;
-export async function fetchColorMap() {
-  if (USE_MOCK) {
-    return {
-      'SEHR GUT': '#00C851',
-      'GUT': '#7CB342',
-      'MAESSIG': '#FFB300',
-      'SCHLECHT': '#FF8A00',
-      'SEHR SCHLECHT': '#FF4444'
-    };
   }
-  if (!colorMapPromise) {
-    colorMapPromise = http.get('/air-quality/colors')
-      .then(r => r.data)
-      .catch(e => { colorMapPromise = null; throw e; });
-  }
-  return colorMapPromise;
 }
 
 /* ---------- Live Data (HTTP) ---------- */
 export async function fetchLiveData() {
-  if (USE_MOCK) return mockLive();
-  const { data } = await http.get('/live-data');
-  return normalizeLivePayload(data);
+  if (USE_MOCK) return mockLive()
+  const { data } = await http.get('/live-data')
+  return normalizeLivePayload(data)
 }
 
 /* ---------- Sessions ---------- */
 export async function fetchSessions() {
   if (USE_MOCK) {
-    return [
-      {
-        id: 1,
-        name: 'Mock Indoor',
-        location: 'Wohnzimmer',
-        start_time: new Date(Date.now()-1000*60*25).toISOString(),
-        end_time: null,
-        is_active: true,
-        session_type: 'indoor'
-      }
-    ];
+    return [{
+      id: 1,
+      name: 'Mock',
+      location: '',
+      start_time: new Date().toISOString(),
+      end_time: null,
+      is_active: true,
+      session_type: 'indoor'
+    }]
   }
-  const { data } = await http.get('/sessions');
-  return data;
+  const { data } = await http.get('/sessions')
+  return data
 }
 
 export async function startSession({ name, location, session_type }) {
   if (USE_MOCK) {
     return {
-      id: Date.now(),
-      name,
-      location: location || null,
-      start_time: new Date().toISOString(),
-      end_time: null,
-      is_active: true,
-      session_type
-    };
+      id: Date.now(), name, location, start_time: new Date().toISOString(),
+      end_time: null, is_active: true, session_type
+    }
   }
-  const { data } = await http.post('/sessions', { name, location, session_type });
-  return data;
+  const { data } = await http.post('/sessions', { name, location, session_type })
+  return data
 }
 
 export async function endSession(sessionId) {
-  if (USE_MOCK) return { message: 'Mock beendet' };
-  const { data } = await http.put(`/sessions/${sessionId}/end`);
-  return data;
+  if (USE_MOCK) return { message: 'Mock beendet' }
+  const { data } = await http.put(`/sessions/${sessionId}/end`)
+  return data
 }
 
+/* ---------- Verlauf (keine Änderung) ---------- */
 export async function fetchSessionData(sessionId, limit = 500) {
   if (USE_MOCK) {
-    const base = Date.now();
+    const base = Date.now()
     return Array.from({ length: 60 }).map((_, i) => {
-      const ts = new Date(base - (59 - i) * 60000).toISOString();
+      const ts = new Date(base - (59 - i) * 60000).toISOString()
       return {
         timestamp: ts,
         TEMP: rand(18,26,1),
@@ -167,91 +153,91 @@ export async function fetchSessionData(sessionId, limit = 500) {
         'PM10': rand(5,80,1),
         'PC2.5': rand(80,900),
         VOCAQI: rand(10,180,0)
-      };
-    });
+      }
+    })
   }
-  const { data } = await http.get(`/sessions/${sessionId}/data?limit=${limit}`);
+  const { data } = await http.get(`/sessions/${sessionId}/data?limit=${limit}`)
   return data.map(row => {
-    const p = row.parsed_data || {};
+    const p = row.parsed_data || {}
     return {
       timestamp: row.timestamp,
-      TEMP: p.TEMP,
-      HUMID: p.HUMID,
-      CO2eq: p.CO2eq,
-      'PM2.5': p['PM2.5'],
-      'PM1.0': p['PM1.0'],
-      'PM10': p['PM10'],
-      'PC2.5': p['PC2.5'],
-      VOCAQI: p.VOCAQI,
-      bVOCeq: p.bVOCeq,
-      GASest: p.GASest
-    };
-  });
+      TEMP:     p.TEMP,
+      HUMID:    p.HUMID,
+      CO2eq:    p.CO2eq,
+      'PM2.5':  p['PM2.5'],
+      'PM1.0':  p['PM1.0'],
+      'PM10':   p['PM10'],
+      'PC2.5':  p['PC2.5'],
+      VOCAQI:   p.VOCAQI,
+      bVOCeq:   p.bVOCeq,
+      GASest:   p.GASest
+    }
+  })
 }
 
+/* ---------- Neue: Session‑Daten seit Timestamp (für useSessionDelta) ---------- */
 export async function fetchSessionDataSince(sessionId, isoTimestamp) {
-  if (USE_MOCK) return [];
+  if (USE_MOCK) return []
   const { data } = await http.get(
     `/sessions/${sessionId}/data/since/${encodeURIComponent(isoTimestamp)}`
-  );
+  )
   return data.map(row => {
-    const p = row.parsed_data || {};
+    const p = row.parsed_data || {}
     return {
       timestamp: row.timestamp,
-      TEMP: p.TEMP,
-      HUMID: p.HUMID,
-      CO2eq: p.CO2eq,
-      'PM2.5': p['PM2.5'],
-      'PM1.0': p['PM1.0'],
-      'PM10': p['PM10'],
-      'PC0.3': p['PC0.3'],
-      'PC0.5': p['PC0.5'],
-      'PC1.0': p['PC1.0'],
-      'PC2.5': p['PC2.5'],
-      'PC5.0': p['PC5.0'],
-      'PC10': p['PC10'],
-      VOCAQI: p.VOCAQI,
-      bVOCeq: p.bVOCeq,
-      GASest: p.GASest
-    };
-  });
+      TEMP:     p.TEMP,
+      HUMID:    p.HUMID,
+      CO2eq:    p.CO2eq,
+      'PM2.5':  p['PM2.5'],
+      'PM1.0':  p['PM1.0'],
+      'PM10':   p['PM10'],
+      'PC0.3':  p['PC0.3'],
+      'PC0.5':  p['PC0.5'],
+      'PC1.0':  p['PC1.0'],
+      'PC2.5':  p['PC2.5'],
+      'PC5.0':  p['PC5.0'],
+      'PC10':   p['PC10'],
+      VOCAQI:   p.VOCAQI,
+      bVOCeq:   p.bVOCeq,
+      GASest:   p.GASest
+    }
+  })
 }
 
 /* ---------- Devices ---------- */
-let mockVentStatus = 'off';
-let mockDiffStatus = 'off';
+let mockVentStatus = 'off'
+let mockDiffStatus = 'off'
 
 export async function fetchDeviceStatus() {
   if (USE_MOCK) {
     return {
       ventilator: { name: 'Ventilator', status: mockVentStatus, ip: 'mock' },
-      diffusor: { name: 'Diffusor', status: mockDiffStatus, ip: 'mock' }
-    };
+      diffusor:   { name: 'Diffusor',   status: mockDiffStatus,   ip: 'mock' }
+    }
   }
-  const { data } = await http.get('/devices/status');
-  return data;
+  const { data } = await http.get('/devices/status')
+  return data
 }
 
 export async function controlVentilator(action) {
-  if (USE_MOCK) { mockVentStatus = action; return { status: mockVentStatus }; }
-  const { data } = await http.put('/devices/ventilator/control', { action });
-  return data;
+  if (USE_MOCK) { mockVentStatus = action; return { status: mockVentStatus } }
+  const { data } = await http.put('/devices/ventilator/control', { action })
+  return data
 }
 
 export async function controlDiffusor(action) {
-  if (USE_MOCK) { mockDiffStatus = action; return { status: mockDiffStatus }; }
-  const { data } = await http.put('/devices/diffusor/control', { action });
-  return data;
+  if (USE_MOCK) { mockDiffStatus = action; return { status: mockDiffStatus } }
+  const { data } = await http.put('/devices/diffusor/control', { action })
+  return data
 }
 
 /* ---------- WebSocket Live ---------- */
-let ws;
-
+let ws
 export function connectLive(onData, onStateChange, opts = {}) {
   if (USE_MOCK) {
-    const id = setInterval(() => onData(mockLive()), 3000);
-    onStateChange?.('MOCK');
-    return () => clearInterval(id);
+    const id = setInterval(() => onData(mockLive()), 3000)
+    onStateChange?.('MOCK')
+    return () => clearInterval(id)
   }
 
   const {
@@ -259,53 +245,54 @@ export function connectLive(onData, onStateChange, opts = {}) {
     baseDelay = 500,
     backoffFactor = 1.8,
     heartbeatInterval = 25000
-  } = opts;
+  } = opts
 
-  const url = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data';
-  let retries = 0;
-  let heartbeatTimer = null;
+  const url = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data'
+  let retries = 0
+  let heartbeatTimer = null
 
   function scheduleHeartbeat() {
-    clearInterval(heartbeatTimer);
+    clearInterval(heartbeatTimer)
     heartbeatTimer = setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        try { ws.send(JSON.stringify({ type: 'PING', ts: Date.now() })); } catch {}
+        try { ws.send(JSON.stringify({ type: 'PING', ts: Date.now() })) } catch {}
       }
-    }, heartbeatInterval);
+    }, heartbeatInterval)
   }
 
   function connect() {
-    ws = new WebSocket(url);
+    ws = new WebSocket(url)
     ws.onopen = () => {
-      onStateChange?.('OPEN');
-      retries = 0;
-      scheduleHeartbeat();
-      try { ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() })); } catch {}
-    };
-    ws.onmessage = e => {
-      const raw = safeParseJSON(e.data);
-      if (!raw) return;
-      onData(normalizeLivePayload(raw));
-    };
-    ws.onerror = () => onStateChange?.('ERROR');
-    ws.onclose = ev => {
-      clearInterval(heartbeatTimer);
-      if (ev.code === 1000) { onStateChange?.('CLOSED'); return; }
-      if (retries < maxRetries) {
-        const delay = Math.round(baseDelay * Math.pow(backoffFactor, retries));
-        retries++;
-        onStateChange?.(`RETRY_${retries}`);
-        setTimeout(connect, delay);
-      } else {
-        onStateChange?.('FAILED');
-      }
-    };
-  }
-  connect();
-  return () => {
-    clearInterval(heartbeatTimer);
-    if (ws && ws.readyState <= 1) {
-      try { ws.close(1000, 'Client close'); } catch {}
+      onStateChange?.('OPEN')
+      retries = 0
+      scheduleHeartbeat()
+      try { ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() })) } catch {}
     }
-  };
+    ws.onmessage = e => {
+      const raw = safeParseJSON(e.data)
+      if (!raw) return
+      onData(normalizeLivePayload(raw))
+    }
+    ws.onerror = () => onStateChange?.('ERROR')
+    ws.onclose = ev => {
+      clearInterval(heartbeatTimer)
+      if (ev.code === 1000) { onStateChange?.('CLOSED'); return }
+      if (retries < maxRetries) {
+        const delay = Math.round(baseDelay * Math.pow(backoffFactor, retries))
+        retries++
+        onStateChange?.(`RETRY_${retries}`)
+        setTimeout(connect, delay)
+      } else {
+        onStateChange?.('FAILED')
+      }
+    }
+  }
+
+  connect()
+  return () => {
+    clearInterval(heartbeatTimer)
+    if (ws && ws.readyState <= 1) {
+      try { ws.close(1000, 'Client close') } catch {}
+    }
+  }
 }

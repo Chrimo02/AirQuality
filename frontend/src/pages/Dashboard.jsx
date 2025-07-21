@@ -1,30 +1,30 @@
 // src/pages/Dashboard.jsx
 import { useEffect, useState, useRef } from 'react';
 import {
+  fetchCurrentSessionInfo,
   fetchSessions,
   startSession,
   endSession,
   fetchSessionData
 } from '../services/api';
-
 import { useLiveStream } from '../hooks/useLiveStream';
 import { useSessionDelta } from '../hooks/useSessionDelta';
 
-import AirQualitySummary from '../components/AirQualitySummary';
-import SessionManager from '../components/SessionManager';
-import SensorMetricCard from '../components/SensorMetricCard';
-import ParticleChartCard from '../components/ParticleChartCard';
-import HistoryChart from '../components/HistoryChart';
-import DeviceControlPanel from '../components/DeviceControlPanel';
+import AirQualitySummary    from '../components/AirQualitySummary';
+import SessionManager       from '../components/SessionManager';
+import SensorMetricCard     from '../components/SensorMetricCard';
+import ParticleChartCard    from '../components/ParticleChartCard';
+import HistoryChart         from '../components/HistoryChart';
+import DeviceControlPanel   from '../components/DeviceControlPanel';
 
 const METRIC_LABELS = [
-  { key: 'TEMP',  label: 'Temperatur',       unit: '°C' },
-  { key: 'HUMID', label: 'Feuchte',          unit: '%' },
-  { key: 'CO2eq', label: 'CO₂-Äquivalent',   unit: 'ppm' },
-  { key: 'PM2.5', label: 'PM2.5',            unit: 'µg/m³' },
-  { key: 'VOCAQI', label: 'VOC-Index',       unit: '' },
-  { key: 'bVOCeq', label: 'bVOCeq',          unit: '' },
-  { key: 'GASest', label: 'GASest',          unit: '' }
+  { key: 'TEMP',  label: 'Temperatur',     unit: '°C'  },
+  { key: 'HUMID', label: 'Feuchte',        unit: '%'   },
+  { key: 'CO2eq', label: 'CO₂-Äquivalent', unit: 'ppm' },
+  { key: 'PM2.5', label: 'PM2.5',          unit: 'µg/m³' },
+  { key: 'VOCAQI',label: 'VOC-Index',      unit: ''    },
+  { key: 'bVOCeq',label: 'bVOCeq',         unit: ''    },
+  { key: 'GASest',label: 'GASest',         unit: ''    }
 ];
 
 const HISTORY_EXTRA_KEYS = [
@@ -33,86 +33,107 @@ const HISTORY_EXTRA_KEYS = [
   'bVOCeq','GASest'
 ];
 
-// Direkter Zugriff auf Vite Env (in Tests wird import.meta.env gemockt)
-const IS_MOCK = (import.meta.env && import.meta.env.VITE_USE_MOCK) === 'true';
+const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export default function Dashboard() {
-  const [sessions, setSessions] = useState([]);
+  // global error state
+  const [error, setError] = useState(null);
+
+  // session state
+  const [sessions, setSessions]           = useState([]);
   const [activeSession, setActiveSession] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
 
+  // live stream
   const viewingHistorical = !!selectedSession && !selectedSession.is_active;
-
-  const liveEnabled = !viewingHistorical;
+  const liveEnabled       = !viewingHistorical;
   const { live, wsState } = useLiveStream(liveEnabled);
 
-  /* Verlauf */
+  // full history vs delta
   const [historyData, setHistoryData] = useState([]);
-  const historyRef = useRef([]);
-
-  /* Delta für aktive Session */
+  const historyRef                    = useRef([]);
   const deltaEnabled = !!selectedSession?.is_active;
-  const { rows: sessionRows } = useSessionDelta(selectedSession?.id, deltaEnabled, 15000);
+  const { rows: sessionRows } = useSessionDelta(
+    selectedSession?.id,
+    deltaEnabled,
+    15000
+  );
 
-  /* Anzeige-Snapshot */
+  // snapshot state
   const [displaySnapshot, setDisplaySnapshot] = useState(null);
-  const [frozenSnapshot, setFrozenSnapshot] = useState(null);
+  const [frozenSnapshot,  setFrozenSnapshot]  = useState(null);
 
-  /* Sessions initial laden */
+  // protect against stale fetchSessionData
+  const sessionReqId = useRef(0);
+
+  /** INITIAL LOAD: use single endpoint + fallback */
   useEffect(() => {
     (async () => {
       try {
+        const info = await fetchCurrentSessionInfo();
         const list = await fetchSessions();
         setSessions(list);
-        const act = list.find(s => s.is_active);
-        if (act) {
+
+        if (info.session_id) {
+          const act = list.find(s => s.id === info.session_id);
           setActiveSession(act);
           setSelectedSession(act);
+
+          const currentReq = ++sessionReqId.current;
           const hist = await fetchSessionData(act.id);
-          historyRef.current = hist;
-          setHistoryData(hist);
-          if (hist.length) {
-            setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
+          if (currentReq === sessionReqId.current) {
+            historyRef.current = hist;
+            setHistoryData(hist);
+            if (hist.length) {
+              setDisplaySnapshot({
+                type: 'session',
+                entry: hist[hist.length - 1]
+              });
+            }
           }
         }
       } catch (e) {
-        console.warn('Sessions laden fehlgeschlagen', e);
+        console.error(e);
+        setError('Fehler beim Laden der Sessions');
       }
     })();
   }, []);
 
-  /* Delta → History bei aktiver Session */
+  /** DELTA → history update */
   useEffect(() => {
     if (!deltaEnabled) return;
     historyRef.current = sessionRows;
     setHistoryData(sessionRows);
     if (sessionRows.length) {
-      setDisplaySnapshot({ type: 'session', entry: sessionRows[sessionRows.length - 1] });
+      setDisplaySnapshot({
+        type: 'session',
+        entry: sessionRows[sessionRows.length - 1]
+      });
     }
   }, [sessionRows, deltaEnabled]);
 
-  /* Live Rolling History (nur ohne aktive / historische Session) */
+  /** LIVE rolling history when no active/historical session */
   useEffect(() => {
-    if (!live) return;
-    if (viewingHistorical) return;
-    if (deltaEnabled) return;
-    if (!selectedSession) {
-      const entry = buildHistoryEntryFromLive(live);
-      historyRef.current = [...historyRef.current.slice(-239), entry];
-      setHistoryData([...historyRef.current]);
-      setDisplaySnapshot({ type: 'live', entry: live });
-    }
+    if (!live || viewingHistorical || deltaEnabled || selectedSession) return;
+    const entry = buildHistoryEntryFromLive(live);
+    historyRef.current = [
+      ...historyRef.current.slice(-239),
+      entry
+    ];
+    setHistoryData([...historyRef.current]);
+    setDisplaySnapshot({ type: 'live', entry: live });
   }, [live, viewingHistorical, deltaEnabled, selectedSession]);
 
+  /** helpers **/
   function buildHistoryEntryFromLive(data) {
     const e = {
-      timestamp: data.timestamp,
-      TEMP: data.measurements?.TEMP,
-      HUMID: data.measurements?.HUMID,
-      CO2eq: data.measurements?.CO2eq,
-      'PM2.5': data.measurements?.['PM2.5'],
-      VOCAQI: data.measurements?.VOCAQI,
-      overall_quality: data.overall_quality
+      timestamp:      data.timestamp,
+      TEMP:           data.measurements?.TEMP,
+      HUMID:          data.measurements?.HUMID,
+      CO2eq:          data.measurements?.CO2eq,
+      'PM2.5':        data.measurements?.['PM2.5'],
+      VOCAQI:         data.measurements?.VOCAQI,
+      overall_quality:data.overall_quality
     };
     HISTORY_EXTRA_KEYS.forEach(k => {
       if (data.measurements?.[k] != null) e[k] = data.measurements[k];
@@ -121,25 +142,41 @@ export default function Dashboard() {
   }
 
   async function handleStartSession({ name, location, session_type }) {
-    const newS = await startSession({ name, location, session_type });
-    setSessions(s => [newS, ...s.map(x => ({ ...x, is_active: false }))]);
-    setActiveSession(newS);
-    setSelectedSession(newS);
-    historyRef.current = [];
-    setHistoryData([]);
-    setDisplaySnapshot(null);
-    setFrozenSnapshot(null);
+    try {
+      const newS = await startSession({ name, location, session_type });
+      setSessions(s =>
+        [newS, ...s.map(x => ({ ...x, is_active: false }))]
+      );
+      setActiveSession(newS);
+      setSelectedSession(newS);
+      historyRef.current = [];
+      setHistoryData([]);
+      setDisplaySnapshot(null);
+      setFrozenSnapshot(null);
+    } catch {
+      setError('Session starten fehlgeschlagen');
+    }
   }
 
   async function handleEndSession(id) {
-    await endSession(id);
-    setSessions(s => s.map(x =>
-      x.id === id ? { ...x, is_active: false, end_time: new Date().toISOString() } : x
-    ));
-    if (selectedSession?.id === id) {
-      setSelectedSession(prev => prev ? { ...prev, is_active: false } : prev);
+    try {
+      await endSession(id);
+      setSessions(s =>
+        s.map(x =>
+          x.id === id
+            ? { ...x, is_active: false, end_time: new Date().toISOString() }
+            : x
+        )
+      );
+      if (selectedSession?.id === id) {
+        setSelectedSession(prev =>
+          prev ? { ...prev, is_active: false } : prev
+        );
+      }
+      setActiveSession(null);
+    } catch {
+      setError('Session beenden fehlgeschlagen');
     }
-    setActiveSession(null);
   }
 
   async function handleSelectSession(session) {
@@ -150,17 +187,25 @@ export default function Dashboard() {
       return;
     }
     setSelectedSession(session);
-    const hist = await fetchSessionData(session.id);
-    historyRef.current = hist;
-    setHistoryData(hist);
-
-    if (session.is_active) {
-      setFrozenSnapshot(null);
-      if (hist.length) {
-        setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
-      } else setDisplaySnapshot(null);
-    } else {
-      buildFrozenFromHistory(hist);
+    const currentReq = ++sessionReqId.current;
+    try {
+      const hist = await fetchSessionData(session.id);
+      if (currentReq === sessionReqId.current) {
+        historyRef.current = hist;
+        setHistoryData(hist);
+        if (session.is_active) {
+          setFrozenSnapshot(null);
+          setDisplaySnapshot(
+            hist.length
+              ? { type: 'session', entry: hist[hist.length - 1] }
+              : null
+          );
+        } else {
+          buildFrozenFromHistory(hist);
+        }
+      }
+    } catch {
+      setError('Laden der historischen Daten fehlgeschlagen');
     }
   }
 
@@ -170,11 +215,11 @@ export default function Dashboard() {
     historyRef.current = hist;
     setHistoryData(hist);
     setFrozenSnapshot(null);
-    if (hist.length) {
-      setDisplaySnapshot({ type: 'session', entry: hist[hist.length - 1] });
-    } else {
-      setDisplaySnapshot(null);
-    }
+    setDisplaySnapshot(
+      hist.length
+        ? { type: 'session', entry: hist[hist.length - 1] }
+        : null
+    );
   }
 
   function buildFrozenFromHistory(hist) {
@@ -187,20 +232,18 @@ export default function Dashboard() {
     const measurements = { ...last };
     delete measurements.timestamp;
     delete measurements.overall_quality;
-
     const frozenRatings = {};
     METRIC_LABELS.forEach(m => {
       if (measurements[m.key] != null) {
         frozenRatings[m.key] = { rating: 'FREEZE', value: measurements[m.key] };
       }
     });
-
     const snapshot = {
-      type: 'history-freeze',
+      type:             'history-freeze',
       measurements,
       air_quality_rating: frozenRatings,
-      overall_quality: null,
-      timestamp: last.timestamp
+      overall_quality:  null,
+      timestamp:        last.timestamp
     };
     setFrozenSnapshot(snapshot);
     setDisplaySnapshot(snapshot);
@@ -222,19 +265,17 @@ export default function Dashboard() {
     }
   }
 
-  /* Welche Daten aktuell anzeigen? */
+  // determine display data
   let display = null;
   if (viewingHistorical && frozenSnapshot) {
     display = frozenSnapshot;
   } else if (displaySnapshot) {
-    if (displaySnapshot.entry?.measurements) {
-      display = displaySnapshot.entry;
-    } else {
-      display = {
-        measurements: { ...displaySnapshot.entry },
-        air_quality_rating: live?.air_quality_rating || {}
-      };
-    }
+    display = displaySnapshot.entry?.measurements
+      ? displaySnapshot.entry
+      : {
+          measurements: { ...displaySnapshot.entry },
+          air_quality_rating: live?.air_quality_rating || {}
+        };
   } else if (live) {
     display = live;
   }
@@ -245,50 +286,7 @@ export default function Dashboard() {
 
   const overall = viewingHistorical ? null : live?.overall_quality;
 
-  function exportJSON() {
-    if (!historyData.length) return;
-    const payload = {
-      generated_at: new Date().toISOString(),
-      selected_session: selectedSession || null,
-      history_rows: historyData
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    triggerDownload(url, `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.json`);
-  }
-
-  function exportCSV() {
-    if (!historyData.length) return;
-    const cols = Object.keys(historyData[0]);
-    const lines = [
-      cols.join(';'),
-      ...historyData.map(r => cols.map(c => (r[c] == null ? '' : r[c])).join(';'))
-    ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    triggerDownload(url, `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.csv`);
-  }
-
-  async function exportPDF() {
-    try {
-      const { default: html2canvas } = await import('html2canvas');
-      const { default: jsPDF } = await import('jspdf');
-      const root = document.querySelector('#root');
-      const canvas = await html2canvas(root, { scale: 2, backgroundColor: '#ffffff' });
-      const img = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'pt', 'a4');
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
-      const imgW = canvas.width * ratio;
-      const imgH = canvas.height * ratio;
-      pdf.addImage(img, 'PNG', (pageW - imgW) / 2, 20, imgW, imgH - 40);
-      pdf.save(`air_quality_${selectedSession?.name || 'live'}_${Date.now()}.pdf`);
-    } catch {
-      alert('PDF Export benötigt html2canvas & jspdf (npm install html2canvas jspdf)');
-    }
-  }
-
+  /** EXPORT FUNCTIONS **/
   function triggerDownload(url, filename) {
     const a = document.createElement('a');
     a.href = url;
@@ -302,8 +300,77 @@ export default function Dashboard() {
     }, 200);
   }
 
+  function exportJSON() {
+    if (!historyData.length) return;
+    const payload = {
+      generated_at: new Date().toISOString(),
+      selected_session: selectedSession || null,
+      history_rows: historyData
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json'
+      })
+    );
+    triggerDownload(
+      url,
+      `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.json`
+    );
+  }
+
+  function exportCSV() {
+    if (!historyData.length) return;
+    const cols = Object.keys(historyData[0]);
+    const lines = [
+      cols.join(';'),
+      ...historyData.map(r =>
+        cols.map(c => (r[c] == null ? '' : r[c])).join(';')
+      )
+    ];
+    const url = URL.createObjectURL(
+      new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    );
+    triggerDownload(
+      url,
+      `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.csv`
+    );
+  }
+
+  async function exportPDF() {
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF }       = await import('jspdf');
+      const root = document.querySelector('#root');
+      const canvas = await html2canvas(root, {
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      const img = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'pt', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+      const imgW = canvas.width * ratio;
+      const imgH = canvas.height * ratio;
+      pdf.addImage(img, 'PNG', (pageW - imgW) / 2, 20, imgW, imgH - 40);
+      pdf.save(
+        `air_quality_${selectedSession?.name || 'live'}_${Date.now()}.pdf`
+      );
+    } catch {
+      alert(
+        'PDF Export benötigt html2canvas & jspdf (npm install html2canvas jspdf)'
+      );
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[1500px] px-6 py-6 space-y-6">
+      {error && (
+        <div className="text-red-600 bg-red-100 p-2 rounded">
+          {error}
+        </div>
+      )}
+
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -314,16 +381,19 @@ export default function Dashboard() {
               Letztes Update:
               <span className="text-slate-800 font-medium">{lastUpdate}</span>
               <span className="px-2 py-0.5 rounded bg-slate-200 border border-slate-300 text-[10px] tracking-wide">
-                WS: {wsState}{IS_MOCK && ' · MOCK'}
+                WS: {wsState} {IS_MOCK && '· MOCK'}
               </span>
               {selectedSession && (
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] tracking-wide border
-                  ${viewingHistorical
+                  className={`px-2 py-0.5 rounded text-[10px] tracking-wide border ${
+                    viewingHistorical
                       ? 'bg-indigo-200 border-indigo-300 text-indigo-800'
-                      : 'bg-emerald-200 border-emerald-300 text-emerald-800'}`}
+                      : 'bg-emerald-200 border-emerald-300 text-emerald-800'
+                  }`}
                 >
-                  {viewingHistorical ? 'Historische Session' : 'Aktive Session'}
+                  {viewingHistorical
+                    ? 'Historische Session'
+                    : 'Aktive Session'}
                 </span>
               )}
               {viewingHistorical && (
@@ -339,15 +409,15 @@ export default function Dashboard() {
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={exportCSV}
-              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
               disabled={!historyData.length}
+              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
             >
               Export CSV
             </button>
             <button
               onClick={exportJSON}
-              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
               disabled={!historyData.length}
+              className="px-3 py-1.5 text-xs font-semibold rounded border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50 disabled:opacity-30"
             >
               Export JSON
             </button>
@@ -385,20 +455,20 @@ export default function Dashboard() {
             ? frozenSnapshot.air_quality_rating?.[m.key]?.rating || null
             : live?.air_quality_rating?.[m.key]?.rating || null;
 
-            return (
-              <SensorMetricCard
-                key={m.key}
-                label={m.label}
-                unit={m.unit}
-                value={
-                  val != null
-                    ? (typeof val === 'number' ? val.toString() : val)
-                    : null
-                }
-                rating={rating}
-                frozen={viewingHistorical}
-              />
-            );
+          return (
+            <SensorMetricCard
+              key={m.key}
+              label={m.label}
+              unit={m.unit}
+              value={
+                val != null
+                  ? (typeof val === 'number' ? val.toString() : val)
+                  : null
+              }
+              rating={rating}
+              frozen={viewingHistorical}
+            />
+          );
         })}
       </section>
 
@@ -412,12 +482,20 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-col gap-6">
           <ParticleChartCard
-            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            measurements={
+              viewingHistorical
+                ? frozenSnapshot?.measurements
+                : live?.measurements
+            }
             type="PM"
             frozen={viewingHistorical}
           />
           <ParticleChartCard
-            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            measurements={
+              viewingHistorical
+                ? frozenSnapshot?.measurements
+                : live?.measurements
+            }
             type="PC"
             frozen={viewingHistorical}
           />
