@@ -1,12 +1,46 @@
-# Build Stage
-FROM node:18-alpine as build
+# ┌───────────────────────────────────────────────────────────────────────────
+# │ Stage 1: Build mit Node (Vite)
+# └───────────────────────────────────────────────────────────────────────────
+FROM node:18-alpine AS builder
+
+# Arbeitsverzeichnis
 WORKDIR /app
-RUN npm install --legacy-peer-deps
+
+# Build-Args für deine VITE-Variablen
+# Werte werden beim `docker build` per --build-arg übergeben
+ARG VITE_USE_MOCK=false
+ARG VITE_API_URL
+
+# Setze sie als ENV, damit Vite beim Build die import.meta.env liest
+ENV VITE_USE_MOCK=${VITE_USE_MOCK}
+ENV VITE_API_URL=${VITE_API_URL}
+
+# Dependencies installieren
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Quellcode kopieren und builden
 COPY . .
 RUN npm run build
+# Das Ergebnis landet in /app/dist (Standard bei Vite)
 
-# Production Stage
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+
+# ┌───────────────────────────────────────────────────────────────────────────
+# │ Stage 2: Serve mit Nginx
+# └───────────────────────────────────────────────────────────────────────────
+FROM nginx:stable-alpine
+
+# Entferne standard nginx-Konfig, falls nötig
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Kopiere deine eigene Konfiguration (siehe unten)  
+COPY nginx.conf /etc/nginx/conf.d/
+
+# Kopiere das gebaute Frontend
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Port freigeben
 EXPOSE 80
+
+# Nginx im Vordergrund starten
 CMD ["nginx", "-g", "daemon off;"]
