@@ -1,25 +1,37 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Smart Home Frontend
 
-Currently, two official plugins are available:
+React/Vite-Frontend zur **Darstellung von Luftqualitäts-Messdaten**, **Session-Verwaltung** und **Steuerung von Geräten** (Ventilator & Aroma-Diffusor).  
+Es kann wahlweise mit **Mock-Daten** oder einem **echten Backend** laufen.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## Features
+- Live- und historische Messdaten anzeigen
+- Sessions starten/beenden und Daten exportieren
+- Gerätesteuerung (Ventilator / Diffusor)
+- Mock-Modus zum schnellen Ausprobieren ohne Backend
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech-Stack
+- React + Vite
+- Tailwind CSS
+- Axios
+- Jest & @testing-library/react (Komponenten-/Service-Tests)
 
+---
 
-  Aktion          | Befehl                  |
-| --------------- | ----------------------- |
-| Dev starten     | `npm run dev`           |
-| Build           | `npm run build`         |
-| Lint prüfen     | `npm run lint`          |
-| Lint + Auto-Fix | `npm run lint:fix`      |
-| Tests (Watch)   | `npm test`              |
-| Tests einmal    | `npm run test:once`     |
-| CI Tests        | `npm run test:ci`       |
-| Coverage Report | `npm run test:coverage` |
-| Mutation Tests  | `npm run mutate`        |
+## Voraussetzungen
+- Node ≥ 18.18
+- npm ≥ 9
+
+---
+
+## Schnellstart
+
+```bash
+# 1. Dependencies installieren
+npm install
+
+# 2. Dev-Server starten
+npm run dev
+# -> Im Terminal erscheint eine URL (http://localhost:5173 o.ä.) anklicken

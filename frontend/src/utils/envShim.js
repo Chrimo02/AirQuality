@@ -12,12 +12,12 @@ export function getViteEnv() {
     return cachedEnv;
   }
 
-  // 2. Node / Fallback (auch im Vite Dev Server verfügbar, weil wir kein import.meta verwenden)
+  // 2. Node / Fallback
   const useMock =
     (typeof process !== 'undefined' &&
       process.env &&
       process.env.VITE_USE_MOCK) ||
-    'true';s
+    'true';
 
   const apiUrl =
     (typeof process !== 'undefined' &&

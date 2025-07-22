@@ -18,9 +18,7 @@
     "test:once": "jest --runInBand",
     "test:ci": "jest --passWithNoTests --runInBand --ci",
     "test:coverage": "jest --coverage --runInBand",
-    "mutate": "stryker run",
-    "analyze": "npm run lint && npm run test:once",
-    "prepare": "husky install"
+    "analyze": "npm run lint && npm run test:once"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -38,8 +36,6 @@
     "@babel/plugin-syntax-import-meta": "^7.10.4",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
-    "@stryker-mutator/core": "^9.0.1",
-    "@stryker-mutator/jest-runner": "^9.0.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -48,10 +44,6 @@
     "axios-mock-adapter": "^2.1.0",
     "babel-jest": "^30.0.4",
     "dotenv": "^17.2.0",
-    "eslint": "^9.25.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",

@@ -63,7 +63,7 @@ export default function Dashboard() {
   const [displaySnapshot, setDisplaySnapshot] = useState(null);
   const [frozenSnapshot,  setFrozenSnapshot]  = useState(null);
 
-  // to avoid stale responses
+  
   const sessionReqId = useRef(0);
 
   /** INITIAL LOAD **/
