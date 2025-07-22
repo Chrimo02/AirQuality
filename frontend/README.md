@@ -1,5 +1,5 @@
 
-# Smart Home Frontend
+# Air quality monitoring Frontend
 
 React/Vite-Frontend zur **Darstellung von Luftqualitäts-Messdaten**, **Session-Verwaltung** und **Steuerung von Geräten** (Ventilator & Aroma-Diffusor).  
 Es kann wahlweise mit **Mock-Daten** oder einem **echten Backend** laufen.

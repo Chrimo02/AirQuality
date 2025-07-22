@@ -253,10 +253,10 @@ export function connectLive(onData, onStateChange) {
     onStateChange?.('MOCK')
     return () => clearInterval(id)
   }
-  const url = `${WS_BASE_URL}/ws/live-data`  // ✅ Backticks for template literal
+  const url = `${WS_BASE_URL}/ws/live-data`  
   console.log('[connectLive] WS URL =', url)
   function _connect(attempt = 1) {
-    console.log(`[connectLive] attempt #${attempt} to open WebSocket`)  // ✅ Backticks
+    console.log(`[connectLive] attempt #${attempt} to open WebSocket`)  
     ws = new WebSocket(url)
     ws.onopen = () => {
       console.log('[WS] onopen')
@@ -274,7 +274,7 @@ export function connectLive(onData, onStateChange) {
     ws.onclose = ev => {
       console.log('[WS] onclose', ev.code, ev.reason)
       const next = attempt + 1
-      onStateChange?.(ev.code === 1000 ? 'CLOSED' : `RETRY_${next}`)  // ✅ Fixed retry state format
+      onStateChange?.(ev.code === 1000 ? 'CLOSED' : `RETRY_${next}`)  
       if (ev.code !== 1000 && next <= 6) {
         setTimeout(() => _connect(next), 5000)
       }
