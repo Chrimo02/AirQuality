@@ -5,6 +5,7 @@ import axiosRetry from 'axios-retry'
 /* ---------- ENV ---------- */
 export const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true'
 export const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000'
+const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
 
 /* ---------- Axios Client + Retry + Interceptor ---------- */
 export const http = axios.create({
@@ -238,67 +239,52 @@ export async function controlDiffusor(action) {
 }
 
 /* ---------- WebSocket Live ---------- */
+/* ---------- WebSocket Live ---------- */
 let ws
-export function connectLive(onData, onStateChange, opts = {}) {
+export function connectLive(onData, onStateChange) {
+  console.log('[connectLive] called, USE_MOCK=', USE_MOCK)
   if (USE_MOCK) {
-    const id = setInterval(() => onData(mockLive()), 3000)
+    console.log('[connectLive] MOCK mode – firing fake data')
+    const id = setInterval(() => {
+      const mock = mockLive()
+      console.log('[MOCK live]', mock)
+      onData(mock)
+    }, 3000)
     onStateChange?.('MOCK')
     return () => clearInterval(id)
   }
-
-  const {
-    maxRetries = 6,
-    baseDelay = 500,
-    backoffFactor = 1.8,
-    heartbeatInterval = 25000
-  } = opts
-
-  const url = BASE_URL.replace(/^http/, 'ws') + '/ws/live-data'
-  let retries = 0
-  let heartbeatTimer = null
-
-  function scheduleHeartbeat() {
-    clearInterval(heartbeatTimer)
-    heartbeatTimer = setInterval(() => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        try { ws.send(JSON.stringify({ type: 'PING', ts: Date.now() })) } catch {}
-      }
-    }, heartbeatInterval)
-  }
-
-  function connect() {
+  const url = `${WS_BASE_URL}/ws/live-data`  // ✅ Backticks for template literal
+  console.log('[connectLive] WS URL =', url)
+  function _connect(attempt = 1) {
+    console.log(`[connectLive] attempt #${attempt} to open WebSocket`)  // ✅ Backticks
     ws = new WebSocket(url)
     ws.onopen = () => {
+      console.log('[WS] onopen')
       onStateChange?.('OPEN')
-      retries = 0
-      scheduleHeartbeat()
-      try { ws.send(JSON.stringify({ type: 'HELLO', client: 'frontend', ts: Date.now() })) } catch {}
     }
     ws.onmessage = e => {
-      const raw = safeParseJSON(e.data)
-      if (!raw) return
-      onData(normalizeLivePayload(raw))
+      console.log('[WS] onmessage:', e.data)
+      const json = safeParseJSON(e.data)
+      if (json) onData(normalizeLivePayload(json))
     }
-    ws.onerror = () => onStateChange?.('ERROR')
+    ws.onerror = err => {
+      console.error('[WS] onerror', err)
+      onStateChange?.('ERROR')
+    }
     ws.onclose = ev => {
-      clearInterval(heartbeatTimer)
-      if (ev.code === 1000) { onStateChange?.('CLOSED'); return }
-      if (retries < maxRetries) {
-        const delay = Math.round(baseDelay * Math.pow(backoffFactor, retries))
-        retries++
-        onStateChange?.(`RETRY_${retries}`)
-        setTimeout(connect, delay)
-      } else {
-        onStateChange?.('FAILED')
+      console.log('[WS] onclose', ev.code, ev.reason)
+      const next = attempt + 1
+      onStateChange?.(ev.code === 1000 ? 'CLOSED' : `RETRY_${next}`)  // ✅ Fixed retry state format
+      if (ev.code !== 1000 && next <= 6) {
+        setTimeout(() => _connect(next), 5000)
       }
     }
   }
-
-  connect()
+  _connect()
   return () => {
-    clearInterval(heartbeatTimer)
-    if (ws && ws.readyState <= 1) {
-      try { ws.close(1000, 'Client close') } catch {}
+    console.log('[connectLive] manual close')
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close(1000, 'Client close')
     }
   }
 }
