@@ -1,3 +1,4 @@
+// src/components/HistoryChart.jsx
 import { useState, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis,
@@ -5,7 +6,7 @@ import {
 } from 'recharts';
 
 const COLOR_POOL = ['#0ea5e9','#10b981','#f59e0b','#6366f1','#ef4444','#14b8a6','#8b5cf6','#f97316','#22c55e','#0d9488'];
-const CORE = ['TEMP','HUMID','CO2eq','PM2.5','VOCAQI'];
+const CORE  = ['TEMP','HUMID','CO2eq','PM2.5','VOCAQI'];
 const EXTRA = ['PM1.0','PM10','PC0.3','PC0.5','PC1.0','PC2.5','PC5.0','PC10'];
 
 export default function HistoryChart({ data, metrics = CORE }) {
@@ -14,10 +15,15 @@ export default function HistoryChart({ data, metrics = CORE }) {
   const toggle = m =>
     setSelected(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
-  const mapped = (data || []).map(d => ({
-    ...d,
-    time: new Date(d.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
-  }));
+  // sortieren
+  const mapped = useMemo(() => {
+    return [...(data || [])]
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) // ASC
+      .map(d => ({
+        ...d,
+        time: new Date(d.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
+      }));
+  }, [data]);
 
   const activeLines = useMemo(
     () => selected.filter(m => mapped.some(row => row[m] != null)),
@@ -26,7 +32,7 @@ export default function HistoryChart({ data, metrics = CORE }) {
 
   const allKeys = [...CORE, ...EXTRA];
 
-  const selectAll = () => setSelected(allKeys);
+  const selectAll  = () => setSelected(allKeys);
   const selectNone = () => setSelected([]);
   const selectCore = () => setSelected(CORE);
 
@@ -43,7 +49,7 @@ export default function HistoryChart({ data, metrics = CORE }) {
             onClick={selectAll}
             className="px-2 py-0.5 rounded text-[10px] font-semibold border border-cyan-500 text-cyan-600 bg-white hover:bg-cyan-50"
           >Alle</button>
-            <button
+          <button
             onClick={selectNone}
             className="px-2 py-0.5 rounded text-[10px] font-semibold border border-slate-400 text-slate-600 bg-white hover:bg-slate-100"
           >Keine</button>
