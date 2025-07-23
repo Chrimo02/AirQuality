@@ -21,7 +21,7 @@ services:
       dockerfile: DOCKERFILE.frontend
       args:
         VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
-        VITE_API_URL:   ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL:   ${VITE_API_URL:-http://172.20.10.4:8000}
     container_name: airquality-frontend
 
     ports:
@@ -33,4 +33,4 @@ services:
     # optional, falls du Umgebungsvariablen auch zur Laufzeit brauchst
     environment:
       - VITE_USE_MOCK=${VITE_USE_MOCK:-false}
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_API_URL=${VITE_API_URL:-http://172.20.10.4:8000}
