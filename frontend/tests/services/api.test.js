@@ -1,10 +1,8 @@
 jest.mock('../../src/services/api', () => {
-  // Wir wollen *nicht* die echte Datei (mit Zufall), sondern einen kontrollierten Mock
-  // ABER: wir möchten Funktionalität testen → wir können stattdessen *deine* Logik importieren?
-  // Simpler: Alibi + Sinn: Struktur & Ratings.
+
   return {
     __esModule: true,
-    http: {}, // Dummy, falls importiert
+    http: {}, 
     fetchLiveData: jest.fn(async () => ({
       timestamp: '2025-01-01T00:00:00Z',
       measurements: { TEMP: 22.5, HUMID: 45, CO2eq: 650, 'PM2.5': 7.2 },

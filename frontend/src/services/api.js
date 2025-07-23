@@ -26,7 +26,7 @@ http.interceptors.response.use(
   }
 );
 
-/* ---------- Neue Session‑Info Endpoint ---------- */
+/* ---------- Session‑Info Endpoint ---------- */
 export async function fetchCurrentSessionInfo() {
   if (USE_MOCK) {
     return { session_id: null, session_type: 'indoor' };
@@ -192,7 +192,7 @@ export async function fetchSessionData(sessionId, limit = 500) {
   });
 }
 
-/* ---------- Neue: Session‑Daten seit Timestamp ---------- */
+/* ---------- Session‑Daten seit Timestamp ---------- */
 export async function fetchSessionDataSince(sessionId, isoTimestamp) {
   if (USE_MOCK) return [];
   const { data } = await http.get(

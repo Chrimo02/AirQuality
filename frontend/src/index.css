@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Heller struktureller Hintergrund */
+/* Heller  Hintergrund */
 html, body, #root {
   @apply min-h-full font-sans;
   background:

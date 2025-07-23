@@ -1,6 +1,4 @@
-// src/utils/envShim.js
-// Vereinheitlichter Zugriff auf ENV ohne import.meta (test-sicher)
-
+// gruppe-04---air-quality-monitoring/frontend/src/utils/envShim.js
 let cachedEnv = null;
 
 export function getViteEnv() {

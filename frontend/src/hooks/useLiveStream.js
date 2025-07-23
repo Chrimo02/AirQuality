@@ -28,7 +28,7 @@ export function useLiveStream(active = true, options = {}) {
     };
   }, [active]);
 
-  // --- NEU: Geräte-Zustände extrahieren ---
+  // --- Geräte-Zustände extrahieren ---
   const devices = live
     ? {
         ventilator: {

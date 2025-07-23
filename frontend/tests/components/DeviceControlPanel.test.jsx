@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { jest } from '@jest/globals';
 
-// ENV falls benötigt
+// ENV
 beforeEach(() => {
   globalThis.__TEST_ENV__ = { VITE_API_URL: 'http://localhost:8000', VITE_USE_MOCK: 'true' };
 });
