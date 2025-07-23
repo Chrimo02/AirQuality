@@ -8,25 +8,42 @@ export function useLiveStream(active = true, options = {}) {
   const cleanupRef = useRef(null);
 
   useEffect(() => {
-    console.log('[useLiveStream] useEffect, active=', active)
-    if (!active) return
-    let mounted = true
+    if (!active) return;
+    let mounted = true;
+
     // 1) Initialer HTTP‑Snapshot
     fetchLiveData()
       .then(first => mounted && setLive(first))
-      .catch(() => console.warn('[useLiveStream] HTTP initial load failed'))
+      .catch(() => console.warn('[useLiveStream] HTTP initial load failed'));
+
     // 2) WebSocket starten
     cleanupRef.current = connectLive(
       payload => mounted && setLive(payload),
       state   => setWsState(state)
-    )
+    );
+
     return () => {
-      console.log('[useLiveStream] cleanup')
-      mounted = false
-      cleanupRef.current?.()
-    }
-  }, [active])
-  return { live, wsState }
+      mounted = false;
+      cleanupRef.current?.();
+    };
+  }, [active]);
+
+  // --- NEU: Geräte-Zustände extrahieren ---
+  const devices = live
+    ? {
+        ventilator: {
+          status: live.ventilator_state ?? null,
+          auto:   live.ventilator_auto  ?? false
+        },
+        diffusor: {
+          status: live.diffusor_state   ?? null,
+          auto:   live.diffusor_auto    ?? false
+        }
+      }
+    : {
+        ventilator: { status: null, auto: false },
+        diffusor:   { status: null, auto: false }
+      };
+
+  return { live, wsState, devices };
 }
-
-
