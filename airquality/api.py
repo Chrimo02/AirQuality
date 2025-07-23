@@ -80,6 +80,10 @@ class LiveDataResponse(BaseModel):
     air_quality_rating: Dict[str, Any]
     overall_quality: str
     parsed_data: Dict[str, Any]
+    ventilator_auto: bool
+    diffusor_auto:   bool
+    ventilator_state: str
+    diffusor_state:   str
 
 class DeviceStatus(BaseModel):
     name: str
@@ -152,7 +156,8 @@ def get_air_quality_colors():
 
 @app.on_event("startup")
 async def startup_event():
-    global sensor_reader, mqtt_client
+    global sensor_reader, mqtt_client, last_vent_state, last_diff_state
+
     conn = init_db()
     conn.close()
     
@@ -162,7 +167,14 @@ async def startup_event():
     except Exception as e:
         print(f"Sensor konnte nicht initialisiert werden: {e}")
         sensor_reader = None
+    try:
+        ventilator = TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
+        diffusor = TP100Controller(DIFFUSOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
+        last_vent_state = ventilator.get_status()
+        last_diff_state = diffusor.get_status()
 
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Gerätestatus beim Start: {e}")
     try:
         mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
         print(f"MQTT Client verbunden mit {MQTT_BROKER}:{MQTT_PORT}, Topic: {MQTT_TOPIC}")
@@ -489,6 +501,7 @@ async def get_session_data_since(session_id: int, timestamp: str):
 
 @app.get("/live-data")
 async def get_current_live_data():
+    global last_diff_state, last_vent_state, diffusor_auto, ventilator_auto
     if not sensor_reader:
         raise HTTPException(status_code=503, detail="Sensor not available")
 
@@ -523,7 +536,11 @@ async def get_current_live_data():
         measurements=measurements_all,
         air_quality_rating=ratings,
         overall_quality=overall_quality_str,
-        parsed_data=parsed
+        parsed_data=parsed,
+        ventilator_auto=ventilator_auto,
+        diffusor_auto=diffusor_auto,
+        ventilator_state=last_vent_state,
+        diffusor_state=last_diff_state
     )
 
 # Gerätesteuerung
