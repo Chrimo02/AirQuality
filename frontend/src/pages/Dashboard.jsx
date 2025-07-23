@@ -10,12 +10,12 @@ import {
 import { useLiveStream } from '../hooks/useLiveStream';
 import { useSessionDelta } from '../hooks/useSessionDelta';
 
-import AirQualitySummary    from '../components/AirQualitySummary';
-import SessionManager       from '../components/SessionManager';
-import SensorMetricCard     from '../components/SensorMetricCard';
-import ParticleChartCard    from '../components/ParticleChartCard';
-import HistoryChart         from '../components/HistoryChart';
-import DeviceControlPanel   from '../components/DeviceControlPanel';
+import AirQualitySummary  from '../components/AirQualitySummary';
+import SessionManager     from '../components/SessionManager';
+import SensorMetricCard   from '../components/SensorMetricCard';
+import ParticleChartCard  from '../components/ParticleChartCard';
+import HistoryChart       from '../components/HistoryChart';
+import DeviceControlPanel from '../components/DeviceControlPanel';
 
 const METRIC_LABELS = [
   { key: 'TEMP',  label: 'Temperatur',     unit: '°C'  },
@@ -35,25 +35,46 @@ const HISTORY_EXTRA_KEYS = [
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
+/** Hilfsfunktionen **/
+function sortByTs(rows) {
+  return [...rows].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+}
+
+function buildHistoryEntryFromLive(data) {
+  const e = {
+    timestamp:       data.timestamp,
+    TEMP:            data.measurements?.TEMP,
+    HUMID:           data.measurements?.HUMID,
+    CO2eq:           data.measurements?.CO2eq,
+    'PM2.5':         data.measurements?.['PM2.5'],
+    VOCAQI:          data.measurements?.VOCAQI,
+    overall_quality: data.overall_quality
+  };
+  HISTORY_EXTRA_KEYS.forEach(k => {
+    if (data.measurements?.[k] != null) e[k] = data.measurements[k];
+  });
+  return e;
+}
+
 export default function Dashboard() {
-  // global error state (dismissible)
+  // global error
   const [error, setError] = useState(null);
 
   // sessions
-  const [sessions, setSessions]           = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [sessions, setSessions]                 = useState([]);
+  const [activeSession, setActiveSession]       = useState(null);
+  const [selectedSession, setSelectedSession]   = useState(null);
 
   // live
   const viewingHistorical = !!selectedSession && !selectedSession.is_active;
   const liveEnabled       = !viewingHistorical;
   const { live, wsState } = useLiveStream(liveEnabled);
 
-  // history vs delta
+  // history / delta
   const [historyData, setHistoryData] = useState([]);
   const historyRef                    = useRef([]);
-  const deltaEnabled = !!selectedSession?.is_active;
-  const { rows: sessionRows } = useSessionDelta(
+  const deltaEnabled                  = !!selectedSession?.is_active;
+  const { rows: sessionRows }         = useSessionDelta(
     selectedSession?.id,
     deltaEnabled,
     15000
@@ -63,7 +84,6 @@ export default function Dashboard() {
   const [displaySnapshot, setDisplaySnapshot] = useState(null);
   const [frozenSnapshot,  setFrozenSnapshot]  = useState(null);
 
-  
   const sessionReqId = useRef(0);
 
   /** INITIAL LOAD **/
@@ -79,8 +99,8 @@ export default function Dashboard() {
           setActiveSession(act);
           setSelectedSession(act);
 
-          const req = ++sessionReqId.current;
-          const hist = await fetchSessionData(act.id);
+          const req  = ++sessionReqId.current;
+          const hist = sortByTs(await fetchSessionData(act.id));
           if (req === sessionReqId.current) {
             historyRef.current = hist;
             setHistoryData(hist);
@@ -99,10 +119,11 @@ export default function Dashboard() {
   /** DELTA UPDATE **/
   useEffect(() => {
     if (!deltaEnabled) return;
-    historyRef.current = sessionRows;
-    setHistoryData(sessionRows);
-    if (sessionRows.length) {
-      setDisplaySnapshot({ type: 'session', entry: sessionRows[sessionRows.length - 1] });
+    const sorted = sortByTs(sessionRows);
+    historyRef.current = sorted;
+    setHistoryData(sorted);
+    if (sorted.length) {
+      setDisplaySnapshot({ type: 'session', entry: sorted[sorted.length - 1] });
     }
   }, [sessionRows, deltaEnabled]);
 
@@ -115,31 +136,23 @@ export default function Dashboard() {
     setDisplaySnapshot({ type: 'live', entry: live });
   }, [live, viewingHistorical, deltaEnabled, selectedSession]);
 
-  /** HELPERS **/
-  function buildHistoryEntryFromLive(data) {
-    const e = {
-      timestamp:      data.timestamp,
-      TEMP:           data.measurements?.TEMP,
-      HUMID:          data.measurements?.HUMID,
-      CO2eq:          data.measurements?.CO2eq,
-      'PM2.5':        data.measurements?.['PM2.5'],
-      VOCAQI:         data.measurements?.VOCAQI,
-      overall_quality:data.overall_quality
-    };
-    HISTORY_EXTRA_KEYS.forEach(k => {
-      if (data.measurements?.[k] != null) e[k] = data.measurements[k];
-    });
-    return e;
-  }
-
+  /** Handlers **/
   async function handleStartSession({ name, location, session_type }) {
     try {
       const newS = await startSession({ name, location, session_type });
       setSessions(s => [newS, ...s.map(x => ({ ...x, is_active: false }))]);
       setActiveSession(newS);
       setSelectedSession(newS);
+
+      // Verlauf leeren – optional Live-Snapshot als Startpunkt
       historyRef.current = [];
       setHistoryData([]);
+      if (live) {
+        const entry = buildHistoryEntryFromLive(live);
+        historyRef.current = [entry];
+        setHistoryData([entry]);
+      }
+
       setDisplaySnapshot(null);
       setFrozenSnapshot(null);
     } catch {
@@ -170,7 +183,7 @@ export default function Dashboard() {
     setSelectedSession(session);
     const req = ++sessionReqId.current;
     try {
-      const hist = await fetchSessionData(session.id);
+      const hist = sortByTs(await fetchSessionData(session.id));
       if (req === sessionReqId.current) {
         historyRef.current = hist;
         setHistoryData(hist);
@@ -188,7 +201,7 @@ export default function Dashboard() {
 
   async function switchToActiveSession(active) {
     setSelectedSession(active);
-    const hist = await fetchSessionData(active.id);
+    const hist = sortByTs(await fetchSessionData(active.id));
     historyRef.current = hist;
     setHistoryData(hist);
     setFrozenSnapshot(null);
@@ -207,7 +220,9 @@ export default function Dashboard() {
     delete measurements.overall_quality;
     const frozenRatings = {};
     METRIC_LABELS.forEach(m => {
-      if (measurements[m.key] != null) frozenRatings[m.key] = { rating: 'FREEZE', value: measurements[m.key] };
+      if (measurements[m.key] != null) {
+        frozenRatings[m.key] = { rating: 'FREEZE', value: measurements[m.key] };
+      }
     });
     setFrozenSnapshot({
       type: 'history-freeze',
@@ -253,22 +268,26 @@ export default function Dashboard() {
   }
   function exportJSON() {
     if (!historyData.length) return;
-    const payload = { generated_at: new Date().toISOString(), selected_session: selectedSession || null, history_rows: historyData };
+    const payload = {
+      generated_at: new Date().toISOString(),
+      selected_session: selectedSession || null,
+      history_rows: historyData
+    };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     triggerDownload(url, `air_quality_${selectedSession?.name||'live'}_${Date.now()}.json`);
   }
   function exportCSV() {
     if (!historyData.length) return;
-    const cols = Object.keys(historyData[0]);
+    const cols  = Object.keys(historyData[0]);
     const lines = [cols.join(';'), ...historyData.map(r => cols.map(c => r[c] ?? '').join(';'))];
-    const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+    const url   = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
     triggerDownload(url, `air_quality_${selectedSession?.name||'live'}_${Date.now()}.csv`);
   }
   async function exportPDF() {
     try {
       const { default: html2canvas } = await import('html2canvas');
       const { default: jsPDF }       = await import('jspdf');
-      const root = document.querySelector('#root');
+      const root   = document.querySelector('#root');
       const canvas = await html2canvas(root, { scale: 2, backgroundColor: '#fff' });
       const img    = canvas.toDataURL('image/png');
       const pdf    = new jsPDF('l','pt','a4');
@@ -312,7 +331,8 @@ export default function Dashboard() {
                 </span>
               )}
               {viewingHistorical && (
-                <button onClick={revertToLive}
+                <button
+                  onClick={revertToLive}
                   className="px-2 py-0.5 text-[10px] bg-white border border-slate-300 rounded hover:bg-slate-100">
                   Zurück zu Live
                 </button>
@@ -320,15 +340,20 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={exportCSV} disabled={!historyData.length}
+            <button
+              onClick={exportCSV}
+              disabled={!historyData.length}
               className="px-3 py-1.5 text-xs font-semibold border border-cyan-500 text-cyan-600 rounded hover:bg-cyan-50 disabled:opacity-30">
               Export CSV
             </button>
-            <button onClick={exportJSON} disabled={!historyData.length}
+            <button
+              onClick={exportJSON}
+              disabled={!historyData.length}
               className="px-3 py-1.5 text-xs font-semibold border border-cyan-500 text-cyan-600 rounded hover:bg-cyan-50 disabled:opacity-30">
               Export JSON
             </button>
-            <button onClick={exportPDF}
+            <button
+              onClick={exportPDF}
               className="px-3 py-1.5 text-xs font-semibold border border-indigo-500 text-indigo-600 rounded hover:bg-indigo-50">
               Export PDF
             </button>
@@ -337,7 +362,11 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <AirQualitySummary overall={overall} history={historyData} frozen={viewingHistorical && !!frozenSnapshot} />
+        <AirQualitySummary
+          overall={overall}
+          history={historyData}
+          frozen={viewingHistorical && !!frozenSnapshot}
+        />
         <SessionManager
           activeSession={activeSession}
           selectedSession={selectedSession}
@@ -370,11 +399,23 @@ export default function Dashboard() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <HistoryChart data={historyData} metrics={['TEMP','HUMID','CO2eq','PM2.5','VOCAQI']} frozen={viewingHistorical} />
+          <HistoryChart
+            data={historyData}
+            metrics={['TEMP','HUMID','CO2eq','PM2.5','VOCAQI']}
+            frozen={viewingHistorical}
+          />
         </div>
         <div className="flex flex-col gap-6">
-          <ParticleChartCard measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements} type="PM"  frozen={viewingHistorical} />
-          <ParticleChartCard measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements} type="PC"  frozen={viewingHistorical} />
+          <ParticleChartCard
+            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            type="PM"
+            frozen={viewingHistorical}
+          />
+          <ParticleChartCard
+            measurements={viewingHistorical ? frozenSnapshot?.measurements : live?.measurements}
+            type="PC"
+            frozen={viewingHistorical}
+          />
         </div>
       </div>
     </div>

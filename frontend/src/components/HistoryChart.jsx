@@ -1,11 +1,13 @@
-// src/components/HistoryChart.jsx
 import { useState, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
-const COLOR_POOL = ['#0ea5e9','#10b981','#f59e0b','#6366f1','#ef4444','#14b8a6','#8b5cf6','#f97316','#22c55e','#0d9488'];
+const COLOR_POOL = [
+  '#0ea5e9','#10b981','#f59e0b','#6366f1','#ef4444',
+  '#14b8a6','#8b5cf6','#f97316','#22c55e','#0d9488'
+];
 const CORE  = ['TEMP','HUMID','CO2eq','PM2.5','VOCAQI'];
 const EXTRA = ['PM1.0','PM10','PC0.3','PC0.5','PC1.0','PC2.5','PC5.0','PC10'];
 
@@ -15,10 +17,10 @@ export default function HistoryChart({ data, metrics = CORE }) {
   const toggle = m =>
     setSelected(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
-  // sortieren
+  // Sortiere Daten aufsteigend nach Timestamp und formatiere Zeit
   const mapped = useMemo(() => {
     return [...(data || [])]
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) // ASC
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .map(d => ({
         ...d,
         time: new Date(d.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })

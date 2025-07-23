@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 
@@ -56,7 +55,7 @@ function normalizeLivePayload(raw) {
   return { ...raw, measurements: normalizeMeasurementKeys(raw.measurements || {}) };
 }
 
-/* ---------- Mock Live Data ---------- */
+/* ---------- Mock Live Data & Device States ---------- */
 let mockVentStatus = 'off';
 let mockDiffStatus = 'off';
 let mockVentAuto   = false;
@@ -100,7 +99,7 @@ const mockLive = () => {
     },
     overall_quality: mockRating(),
     session_type: 'indoor',
-    // --- Geräteinfos für Live-UI ---
+    // Geräteinfos für Live-UI
     ventilator_state: mockVentStatus,
     ventilator_auto:  mockVentAuto,
     diffusor_state:   mockDiffStatus,
@@ -158,38 +157,43 @@ export async function endSession(sessionId) {
 export async function fetchSessionData(sessionId, limit = 500) {
   if (USE_MOCK) {
     const base = Date.now();
-    return Array.from({ length: 60 }).map((_, i) => {
-      const ts = new Date(base - (59 - i) * 60000).toISOString();
-      return {
-        timestamp: ts,
-        TEMP: rand(18,26,1),
-        HUMID: rand(30,60,0),
-        CO2eq: rand(500,1400,0),
-        'PM2.5': rand(2,35,1),
-        'PM1.0': rand(1,20,1),
-        'PM10': rand(5,80,1),
-        'PC2.5': rand(80,900),
-        VOCAQI: rand(10,180,0)
-      };
-    });
+    return Array.from({ length: 60 })
+      .map((_, i) => {
+        const ts = new Date(base - (59 - i) * 60000).toISOString();
+        return {
+          timestamp: ts,
+          TEMP: rand(18,26,1),
+          HUMID: rand(30,60,0),
+          CO2eq: rand(500,1400,0),
+          'PM2.5': rand(2,35,1),
+          'PM1.0': rand(1,20,1),
+          'PM10': rand(5,80,1),
+          'PC2.5': rand(80,900),
+          VOCAQI: rand(10,180,0)
+        };
+      })
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
+
   const { data } = await http.get(`/sessions/${sessionId}/data?limit=${limit}`);
-  return data.map(row => {
-    const p = row.parsed_data || {};
-    return {
-      timestamp: row.timestamp,
-      TEMP:     p.TEMP,
-      HUMID:    p.HUMID,
-      CO2eq:    p.CO2eq,
-      'PM2.5':  p['PM2.5'],
-      'PM1.0':  p['PM1.0'],
-      'PM10':   p['PM10'],
-      'PC2.5':  p['PC2.5'],
-      VOCAQI:   p.VOCAQI,
-      bVOCeq:   p.bVOCeq,
-      GASest:   p.GASest
-    };
-  });
+  return data
+    .map(row => {
+      const p = row.parsed_data || {};
+      return {
+        timestamp: row.timestamp,
+        TEMP:     p.TEMP,
+        HUMID:    p.HUMID,
+        CO2eq:    p.CO2eq,
+        'PM2.5':  p['PM2.5'],
+        'PM1.0':  p['PM1.0'],
+        'PM10':   p['PM10'],
+        'PC2.5':  p['PC2.5'],
+        VOCAQI:   p.VOCAQI,
+        bVOCeq:   p.bVOCeq,
+        GASest:   p.GASest
+      };
+    })
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 /* ---------- Session‑Daten seit Timestamp ---------- */
@@ -198,27 +202,29 @@ export async function fetchSessionDataSince(sessionId, isoTimestamp) {
   const { data } = await http.get(
     `/sessions/${sessionId}/data/since/${encodeURIComponent(isoTimestamp)}`
   );
-  return data.map(row => {
-    const p = row.parsed_data || {};
-    return {
-      timestamp: row.timestamp,
-      TEMP:     p.TEMP,
-      HUMID:    p.HUMID,
-      CO2eq:    p.CO2eq,
-      'PM2.5':  p['PM2.5'],
-      'PM1.0':  p['PM1.0'],
-      'PM10':   p['PM10'],
-      'PC0.3':  p['PC0.3'],
-      'PC0.5':  p['PC0.5'],
-      'PC1.0':  p['PC1.0'],
-      'PC2.5':  p['PC2.5'],
-      'PC5.0':  p['PC5.0'],
-      'PC10':   p['PC10'],
-      VOCAQI:   p.VOCAQI,
-      bVOCeq:   p.bVOCeq,
-      GASest:   p.GASest
-    };
-  });
+  return data
+    .map(row => {
+      const p = row.parsed_data || {};
+      return {
+        timestamp: row.timestamp,
+        TEMP:     p.TEMP,
+        HUMID:    p.HUMID,
+        CO2eq:    p.CO2eq,
+        'PM2.5':  p['PM2.5'],
+        'PM1.0':  p['PM1.0'],
+        'PM10':   p['PM10'],
+        'PC0.3':  p['PC0.3'],
+        'PC0.5':  p['PC0.5'],
+        'PC1.0':  p['PC1.0'],
+        'PC2.5':  p['PC2.5'],
+        'PC5.0':  p['PC5.0'],
+        'PC10':   p['PC10'],
+        VOCAQI:   p.VOCAQI,
+        bVOCeq:   p.bVOCeq,
+        GASest:   p.GASest
+      };
+    })
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 /* ---------- Devices ---------- */
