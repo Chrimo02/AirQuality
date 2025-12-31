@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span>PlatformIO als Build-Tool - CM</span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark136'>PlatformIO als Build-Tool - CM</h1>
+</div>
+<div class='wiki-content'>
+<p class="p1">Für die ersten einfachen Betriebstests der LEDs haben wir relativ simple Arduino-Sketches verwendet, da hiermit sehr schnell und einfach die Grundlegende Funktionalität der LEDs getestet werden kann.<br />Während die Arduino-IDE für solche ersten Prototyping-Schritte hervorragend geeignet ist, stößt man bei einem wachsenden Projekt wie unserem allerdings schnell an ihre Grenzen, da die Bibliotheksverwaltung manuell erfolgt, Projektdaten oft in einzelnen Sketch-Dateien liegen, und Debug- sowie Build-Optionen stark eingeschränkt sind. </p><p>Mit <span class="s1"><strong>PlatformIO</strong></span> als Erweiterung in VS Code gewannen wir hingegen eine professionelle, modulare Entwicklungsumgebung, die speziell für Embedded-Projekte konzipiert ist:<br /><br /></p><ul style="text-decoration: none;"><li data-uuid="f00c3376-3e29-49c0-8749-b12d2813dd28"><p class="p1"><span class="s1"><strong>Bibliotheks- und Abhängigkeitsmanagement:</strong></span> Library-Versionen (z. B. ArduinoJson, PubSubClient, Adafruit NeoPixel) werden zentral in <span class="s2">platformio.ini</span> deklariert und bei Bedarf automatisch heruntergeladen. Das verhindert Versionskonflikte und vereinfacht das Onboarding neuer Entwickler.</p></li><li data-uuid="b00632fb-6c48-42b1-9b66-e366aec400a1"><p class="p1"><span class="s1"><strong>Multi-File-Projektstruktur:</strong></span> Statt eines monolithischen Sketches erlaubt PlatformIO eine übersichtliche Trennung in Header/C++-Quellen (<span class="s2">.h</span>/<span class="s2">.cpp</span>), Tests und Konfigurationsdateien. So lässt sich unser Fade-Helper, der MQTT-Manager oder die LED-Controller-Klasse klar voneinander abgrenzen und wiederverwenden.</p></li><li data-uuid="e95290de-b368-4996-bbcc-378a14898e8d"><p class="p1"><span class="s1"><strong>Integrierte Debugging-Unterstützung:</strong></span> Über GDB und die serielle Konsole können Breakpoints gesetzt, Variablen live inspiziert und serielle Logausgaben direkt im Editor verfolgt werden. Das beschleunigt die Fehlersuche in Schleifen wie <span class="s2">handleFade()</span> oder beim MQTT-Reconnect erheblich.</p></li><li data-uuid="cfc9cf50-ce60-441c-a9df-f292506d5083"><p class="p1"><span class="s1"><strong>Custom Build-Flags und Umgebungen:</strong></span> Unterschiedliche Build-Profile (z. B. Debug versus Release, alternative WLAN-Konfigurationen) lassen sich unkompliziert per <span class="s2">env:</span>-Sektionen im <span class="s2">platformio.ini</span> anlegen. Damit ist es möglich, ohne Codeänderungen etwa Test- und Produktiv-Firmware zu generieren.</p></li><li data-uuid="318be22f-0593-479c-afa6-12b422c22b8e"><p class="p1"><span class="s1"><strong>Task-Integration und Continuous Integration:</strong></span> PlatformIO bietet CLI-Befehle für automatisierte Builds und Unit-Tests, lässt sich einfach in CI/CD-Pipelines einbinden und liefert konsistente Ergebnisse auf allen Plattformen (Windows, macOS, Linux).</p></li></ul><p class="p1">Durch den Wechsel von der Arduino-IDE zu PlatformIO profitiert unser Projekt also nicht nur von einer saubereren Code-Organisation, sondern es wird auch die Grundlage für langfristige Wartbarkeit, reproduzierbare Builds und effizientes Team-Development gelegt.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

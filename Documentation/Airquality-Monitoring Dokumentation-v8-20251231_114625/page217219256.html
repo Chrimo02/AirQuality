@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox" checked/><ul><li><span>MQTT-Setup Troubleshooting - CM</span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark134'>MQTT-Setup Troubleshooting - CM</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark135"></a><h3 id="Bookmark135">Troubleshooting am Raspberry Pi:</h3><p class="p1">Wenn beim Start des Mosquitto-Brokers MQTT-Clients aus dem LAN beim Verbindungsversuch die Meldung „Connection refused“ angezeigt wird, liegt das häufig daran, dass der Dienst standardmäßig nur auf der Loopback-Schnittstelle (localhost) lauscht und anonyme Verbindungen unterbindet. Abhilfe schafft eine kurze Anpassung der Mosquitto-Konfiguration:</p><ol style="text-decoration: none;"><li data-uuid="9a9a0877-00e6-42b0-bde1-00f8fd8d0ff4"><p class="p1"><span class="s1">Öffnen Sie die Datei </span><strong>/etc/mosquitto/mosquitto.conf</strong><span class="s1"> (bzw. in </span><strong>/etc/mosquitto/conf.d/</strong><span class="s1">) mit Root-Rechten.<br /></span></p></li><li data-uuid="78284e44-2c9f-4210-a4c2-fd1413ad0dda"><p class="p1">Kommentieren Sie alle Zeilen mit <strong><span class="s1">bind_address 127.0.0.1</span></strong> oder <strong><span class="s1">listener 1883</span></strong> aus, damit keine doppelten Listener-Definitionen mehr existieren.<br /><br /></p></li><li data-uuid="c79fbc11-f75f-4c71-9042-2f38de02d992"><p class="p1">Fügen Sie an geeigneter Stelle (z. B. am Ende) folgende Direktiven ein:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: shell; gutter: false">listener 1883
+allow_anonymous true</pre>
+</div></div><p class="p1">→ <strong>listener 1883</strong> sorgt dafür, dass Mosquitto auf <strong>allen</strong> Netzwerk-Interfaces (0.0.0.0) lauscht.<br />→ <strong>allow_anonymous true </strong>erlaubt Clients, sich ohne Benutzername und Passwort zu verbinden.<br /><br /></p></li><li data-uuid="34cc09cd-16c6-41b1-9018-67b4b36b6aaf">Speichern Sie die Datei und starten Sie den Dienst neu:<br /><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: shell; gutter: false">sudo systemctl restart mosquitto</pre>
+</div></div><br /><br /></li><li data-uuid="4d3fe21b-5410-4892-a57d-83bac411dae0">Überprüfen Sie mit:<br /><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: shell; gutter: false">sudo lsof -i TCP:1883</pre>
+</div></div>dass jetzt <strong>*:1883 (LISTEN) </strong>anstatt wie zuvor nur <strong>localhost:1883 (LISTEN)</strong> angezeigt wird.</li></ol><p class="p1">Anschließend sollten <span class="s1">mosquitto_pub</span>- und <span class="s1">mosquitto_sub</span>-Befehle von jedem Rechner im gleichen Subnetz erfolgreich durchgehen, ohne dass die Verbindung zunächst abgelehnt wird.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

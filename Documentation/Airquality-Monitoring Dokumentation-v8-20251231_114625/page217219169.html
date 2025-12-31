@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span>LED-Ampel & MQTT - CM</span><input type="checkbox" checked/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark130'>LED-Ampel &amp; MQTT - CM</h1>
+</div>
+<div class='wiki-content'>
+<p><br /></p><div class="panel" style="border-width: 1px;"><div class="panelContent">
+<p>
+
+
+</p><div class="plugin_pagetree">
+
+        
+                <div>
+            <span class="plugin_pagetree_status hidden">Alles ausblenden</span>
+            <div class="plugin_pagetree_expandcollapse">
+                <a class="plugin_pagetree_expandall" href="#Bookmark197">Alles erweitern</a>  
+                <a class="plugin_pagetree_collapseall" href="#Bookmark198">Alles ausblenden</a>
+            </div>
+        </div>
+    
+    <ul role="list" aria-busy="true" class="plugin_pagetree_children_list plugin_pagetree_children_list_noleftspace">
+        <div class="plugin_pagetree_children">
+        </div>
+    </ul>
+
+    <fieldset class="hidden">
+        <input type="hidden" name="treeId" value="" />
+        <input type="hidden" name="treeRequestId" value="/plugins/pagetree/naturalchildren.action?decorator=none&amp;excerpt=false&amp;sort=position&amp;reverse=false&amp;disableLinks=false&amp;expandCurrent=false&amp;placement=" />
+        <input type="hidden" name="treePageId" value="217219169" />
+
+        <input type="hidden" name="noRoot" value="false" />
+        <input type="hidden" name="rootPageId" value="217219169" />
+
+        <input type="hidden" name="rootPage" value="" />
+        <input type="hidden" name="startDepth" value="5" />
+        <input type="hidden" name="spaceKey" value="AIR" />
+
+        <input type="hidden" name="i18n-pagetree.loading" value="Wird geladen..." />
+        <input type="hidden" name="i18n-pagetree.error.permission" value="Die Seitenhierarchie kann nicht geladen werden. Sie haben scheinbar keine Berechtigung die Wurzelseite zu sehen." />
+        <input type="hidden" name="i18n-pagetree.eeror.general" value="Ein Problem ist beim Abrufen der Seitenhierarchie aufgetreten. Bitte überprüfen Sie die Server-Log-Datei für weitere Informationen." />
+        <input type="hidden" name="loginUrl" value="/login.action?os_destination=%2Frest%2Fcex%2Flatest%2Fexport%2F217219154%3Fhash%3Df8808a22008a8002&amp;permissionViolation=true" />
+        <input type="hidden" name="mobile" value="false" />
+        <input type="hidden" name="placement" value="" />
+
+                <fieldset class="hidden">
+                            <input type="hidden" name="ancestorId" value="217219169" />
+                    </fieldset>
+    </fieldset>
+</div>
+</div></div><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

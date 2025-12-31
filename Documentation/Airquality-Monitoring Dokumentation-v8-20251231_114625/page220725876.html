@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span>Raspberry Pi Einrichtung & Remote-Workflow - PP</span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark23'>Raspberry Pi Einrichtung &amp; Remote-Workflow - PP</h1>
+</div>
+<div class='wiki-content'>
+<hr /><a name="Bookmark24"></a><h3 id="Bookmark24">1.SSH-Zugang am Pi aktivieren</h3><p>Zuerst wurde SSH auf dem Pi aktiviert, um eine sichere Fernsteuerung über das Netzwerk zu ermöglichen:</p><ol><li data-uuid="a8b41410-1014-4909-9ad0-bde48ba0f201"><p><strong>Raspi-Config öffnen:</strong><br />Am Pi einloggen (Monitor + Tastatur) und im Terminal ausführen:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">sudo raspi-config</pre>
+</div></div></li><li data-uuid="7d73a195-3557-47c7-ad33-31d4a20bcbc0"><p><strong>SSH aktivieren:</strong><br />Im Menü zu „Interfacing Options“ &gt; „SSH“ navigieren und auf „Enable“ stellen.</p></li><li data-uuid="949b4e26-42d3-4c79-96a5-0743e0833e08"><p><strong>SSH-Dienst läuft:</strong><br />Ab jetzt akzeptiert der Pi SSH-Verbindungen automatisch nach jedem Systemstart.</p></li></ol><hr /><a name="Bookmark25"></a><h3 id="Bookmark25">2. IP-Adresse des Pi ermitteln</h3><p>Um den Pi über das Netzwerk anzusprechen, wurde die aktuelle lokale IP-Adresse wie folgt ausgelesen:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">hostname -I</pre>
+</div></div><p>Beispiel-Ausgabe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">192.168.178.68</pre>
+</div></div><p>Die Adresse wurde für alle späteren SSH- und VS Code-Remote-Verbindungen benötigt.</p><hr /><a name="Bookmark26"></a><h3 id="Bookmark26">3. VPN-Verbindung ins THWS-Netz für Bitbucket etc.</h3><p>Um aus dem externen Netzwerk auf interne Dienste (wie das THWS-Bitbucket-Repo) zugreifen zu können, wurde der VPN-Client <strong>openfortivpn</strong> eingerichtet:</p><ol><li data-uuid="22dc3835-91e0-4255-8409-252f2b7d926e"><p><strong>Installation: </strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">sudo apt update sudo apt install -y openfortivpn</pre>
+</div></div></li><li data-uuid="69a10c1c-97bd-4eb8-8a17-f42c17cdab61"><strong>Konfigurationsdatei anlegen:</strong><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">sudo nano /etc/openfortivpn/config
+
+</pre>
+</div></div><pre><br />Mit folgendem (angepassten) Inhalt:</pre><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">host = &lt;vpn.thws.de&gt;
+port = 443
+username = &lt;thws_benutzername&gt;
+password = &lt;thws_passwort&gt;</pre>
+</div></div></li><li data-uuid="7254fa42-10c6-4e59-b2bd-322f10f9b234"><p><code>
+</code></p><p><strong>VPN-Verbindung herstellen:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">sudo openfortivpn</pre>
+</div></div><p>→ Die Verbindung bleibt solange aktiv, wie das Terminal offen bleibt.<br />Beispielausgabe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">FortiGate VPN SSL — Version x.x.x
+Virtual IP: 10.x.x.x</pre>
+</div></div></li></ol><p><br /></p><hr /><a name="Bookmark27"></a><h3 id="Bookmark27">4. Remote-Entwicklung mit VS Code</h3><p>Für effiziente Entwicklung und Deployment wurde <strong>Visual Studio Code</strong> mit dem Plugin „Remote – SSH“ genutzt:</p><ul><li data-uuid="f88f850f-a6bb-4613-82a9-17aece97a7e6"><p><strong>Remote-SSH-Extension installieren</strong></p></li><li data-uuid="f7792f70-5d43-4fce-a4cb-d90c763efad9"><p>Unten links das SSH-Symbol klicken → „Connect to Host…“</p></li><li data-uuid="224f6da7-37f9-45e2-9451-7e2861135750"><p>SSH-Adresse eingeben (z. B. <code><a class="external-link" rel="nofollow" href="https://confluence.student.fiw.fhws.de:8443/mailto:airquality@192.168.178.68" title="https://confluence.student.fiw.fhws.de:8443/mailto:airquality@192.168.178.68">airquality@192.168.178.68</a></code>)</p></li><li data-uuid="e30b4723-77ce-4b0d-9dbc-bb8e5b5c4990"><p>Nach Passwortabfrage verbindet sich VS Code direkt auf das Dateisystem und Terminal des Pi</p></li><li data-uuid="a60b90a9-5fd2-4126-b33e-d70ae80bc161"><p>So kann direkt auf dem Pi programmiert, getestet und deployed werden</p></li></ul><hr /><a name="Bookmark28"></a><h4 id="Bookmark28"><strong>Zusammenfassung</strong></h4><ul><li data-uuid="6cc7e8f8-d906-4517-b44f-a16f5cc80eac"><p>SSH und VPN erlauben vollwertiges Remote-Development am Pi</p></li><li data-uuid="bc446563-94a0-4abe-8651-39728b89cdd6"><p>VS Code bietet direkten Zugriff auf Dateien, Terminal und Tools (Python, pip, git, etc.)</p></li><li data-uuid="6c0a10b5-e98e-4aa9-88e1-be696a0b29fe"><p><strong>Alle Entwicklungs- und Deploymentschritte werden so komfortabel aus der Ferne durchgeführt</strong></p></li></ul><hr /><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span>Luftsensor auslesen - SK</span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark82'>Luftsensor auslesen - SK</h1>
+</div>
+<div class='wiki-content'>
+<p>Als Luftsensor verwenden wir den fortgeschrittenen <em>Canāree I5</em> Luftsensor von Piera Systems.<br />Er kombiniert präzise Partikelzählung mit zusätzlichen Umwelt- und Gasparametern in einem kompakten Gerät.<br />Der Canāree I5 kann Partikel bereits ab 0,1 µm messen – ein Bereich, den die meisten herkömmlichen Feinstaubsensoren nicht abdecken.</p><p><span style="color:var(--ds-text,#333333);"><span>Der Sensor liefert jede Sekunde eine solche Key,Value Rohzeile über USB. Wir verwenden <code>pyserial </code>um die Daten mit Python einzulesen.</span></span></p><p>PC0.1,154397,PC0.3,61758,PC0.5,23998,PC1.0,1048,PC2.5,0,PC5.0,2,PC10,0,PM0.1,0.14128961,PM0.3,1.66720926,PM0.5,4.41222128,PM1.0,5.37196085,PM2.5,5.37196085,PM5.0,5.43639578,PM10,5.45372612,TEMP,23.91,HUMID,49.21,ATM,981.59,VOCAQI,25.00,bVOCeq,0.50,GASest,0.00,CO2eq,500.00,CNR-I5-24I000241</p><a name="Bookmark83"></a><h3 id="Bookmark83">Sensorwerte und Bedeutung</h3><p>Die vom Canāree I5 gelieferten Rohdaten bestehen aus Schlüssel-Wert-Paaren im Format `KEY,VALUE`. Nachfolgend eine Übersicht der Werte:</p><div class="table-wrap"><table class="wrapped confluenceTable" style="font-size:1.0em"><tbody><tr><th class="confluenceTh"><p>Schlüssel</p></th><th class="confluenceTh"><p>Bedeutung</p></th></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>PC0.1 – PC10</p></td><td class="confluenceTd" style="padding:0.5em"><p>Partikelanzahl ≥ x µm pro 0,1 L Luft</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>PM0.1 – PM10</p></td><td class="confluenceTd" style="padding:0.5em"><p>Partikelmassekonzentration in µg/m³</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>TEMP</p></td><td class="confluenceTd" style="padding:0.5em"><p>Temperatur in °C</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>HUMID</p></td><td class="confluenceTd" style="padding:0.5em"><p>Luftfeuchtigkeit in %</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>ATM</p></td><td class="confluenceTd" style="padding:0.5em"><p>Luftdruck in hPa</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>VOCAQI</p></td><td class="confluenceTd" style="padding:0.5em"><p>Luftqualitätsindex basierend auf VOC (0–500)</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>bVOCeq</p></td><td class="confluenceTd" style="padding:0.5em"><p>geschätzte VOC-Konzentration in ppm</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>GASest</p></td><td class="confluenceTd" style="padding:0.5em"><p>allgemeine Gasbelastung (modellabhängig)</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p>CO2eq</p></td><td class="confluenceTd" style="padding:0.5em"><p>CO₂-Äquivalent in ppm</p></td></tr></tbody></table></div><p>Der letzte Eintrag in der Datenzeile ist die Seriennummer des Sensors. <br />Die Werte werden als fortlaufender CSV-String über die serielle Schnittstelle übertragen.</p><a name="Bookmark84"></a><h3 id="Bookmark84">read_sensor_data.py</h3><p>In unserem Projekt sorgt <code>read_sensor_data.py</code> für das Einlesen des Sensors.</p><a name="Bookmark85"></a><h3 id="Bookmark85">SensorReader – Wichtige Codeausschnitte</h3><p>Nachfolgend sind die zentralen Methoden von <code>read_sensor_data</code> aufgeführt. Die in der Implementierung vorhandenen Debug-Ausgaben wurden zur Übersichtlichkeit weggelassen.</p><a name="Bookmark86"></a><h4 id="Bookmark86">Initialisierung und Verbindung</h4><p>Initialisiert den Sensor. <code>/dev/ttyUSB0</code> ist dabei der Port, an dem der Sensor am Raspberry Pi angeschlossen ist. Diesen kann man über die Parameter bei der Objekterstellung auch anpassen. <code>close</code> schließt die Verbindung wieder.</p><pre><br /></pre><div class="code panel pdl" style="border-style: solid;border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">class SensorReader:
+    def __init__(self, port='COM4', baudrate=115200):
+       try:
+            self.ser = serial.Serial(port, baudrate, timeout=1)
+        except serial.SerialException as e:
+            self.ser = None
+    …
+    def close(self):
+        self.ser.close()
+</pre>
+</div></div><a name="Bookmark87"></a><h4 id="Bookmark87">Einlesen roher Zeile</h4><p>Liest eine Datenzeile vom Sensor und liefert <code>None</code>, wenn keine Daten anliegen.</p><div class="code panel pdl" style="border-style: solid;border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">    def lese_daten(self):
+        line = self.ser.readline().decode('utf-8', errors='ignore').strip()
+        return line if line else None
+</pre>
+</div></div><a name="Bookmark88"></a><h4 id="Bookmark88">Parsen in Dict</h4><p>Die Zeile wird an Kommas aufgeteilt und in ein Python‑Dict umgewandelt, um über die Keys direkten Zugriff auf die Messwerte zu ermöglichen. Eine ungerade Anzahl an Teilen signalisiert eine Geräte‑ID am Ende, die mit <code>parts.pop()</code> entnommen wird. Zusätzlich wird ein ISO‑Timestamp eingefügt.  </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>parse_sensor_line</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: true">def parse_sensor_line(self, line):
+    parts = [p.strip() for p in line.split(',')]
+
+    if len(parts) &lt; 2:
+        return None
+
+    result = {}
+    result['timestamp'] = datetime.now().isoformat()
+
+    if len(parts) % 2 != 0:
+        device_id = parts[-1]
+        result['device_id'] = device_id
+        parts = parts[:-1]
+
+    i = 0
+    while i &lt; len(parts) - 1:
+        key = parts[i]
+        value = parts[i + 1]
+
+        try:
+            value = float(value)
+            if value.is_integer():
+                value = int(value)
+        except ValueError:
+            pass
+
+        result[key] = value
+        i += 2
+
+    return result
+</pre>
+</div></div><a name="Bookmark89"></a><h4 id="Bookmark89">Weitere bereitgestellte Methoden</h4><ul><li><code>get_rating_measurements(raw_line)</code>: Extrahiert die 5 Key-Measurements PM2.5, CO2eq, VOCAQI, TEMP, HUMID, die für die Bewertung der Luftqualität und Steuerung der Geräte notwendig sind.</li><li><code>speichere_json(daten, file)</code>: Hängt jedes Dict als eigene JSON‑Zeile an <code>file</code> an für Logging.</li><li data-uuid="7bfee918-5e9f-43e5-8629-da165d0592e3"><code>lese_daten_parsed:</code> Liest Daten vom Sensor und gibt sie direkt als Python-Dict zurück.</li></ul><a name="Bookmark90"></a><h4 id="Bookmark90">Kurzbeispiel der Verwendung</h4><p>Instanziiert das SensorReader‑Objekt, öffnet die serielle Schnittstelle und liefert alle Messwerte als strukturiertes Python‑Dict (inkl. Timestamp) und schließt die Verbindung. </p><div class="code panel pdl" style="border-style: solid;border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">from sensorik.read_sensor_data import SensorReader
+
+reader = SensorReader()
+raw = reader.lese_daten()
+if raw:
+    data = reader.parse_sensor_line(raw)
+    print(data)
+reader.close()
+</pre>
+</div></div><p><br /></p><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

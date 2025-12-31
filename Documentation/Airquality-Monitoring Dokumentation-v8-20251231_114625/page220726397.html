@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span>MQTT-Publishing vom Raspberry Pi - CM</span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark159'>MQTT-Publishing vom Raspberry Pi - CM</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark160"></a><h2 style="text-decoration: none;" id="Bookmark160"><strong>Ziel</strong></h2><p class="p3">Das Ziel war, die bestehende API (<span class="s2">api.py</span>, FastAPI-basiert) so zu erweitern, dass kontinuierlich das aktuelle Luftqualitätslevel via MQTT gepublisht wird. Um Robustheit zu gewährleisten, sollte die API zudem automatisch versuchen, eine verlorene MQTT-Verbindung wiederherzustellen.</p><a name="Bookmark161"></a><h2 style="text-decoration: none;" id="Bookmark161"><strong>Umsetzung</strong></h2><p class="p3">Die Implementierung erfolgte direkt in der vorhandenen <span class="s2">api.py</span> und umfasst folgende Aspekte:</p><a name="Bookmark162"></a><h3 style="text-decoration: none;" id="Bookmark162"><strong>1. Initialisierung des MQTT-Clients</strong></h3><p class="p3">Beim Start der API wird der MQTT-Client initialisiert und verbindet sich mit dem lokalen MQTT-Broker:</p><pre><br /></pre><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">@app.on_event(&quot;startup&quot;)
+async def startup_event():
+    global mqtt_client
+
+    try:
+        mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
+        print(f&quot;MQTT Client verbunden mit {MQTT_BROKER}:{MQTT_PORT}, Topic: {MQTT_TOPIC}&quot;)
+    except Exception as e:
+        print(f&quot;MQTT Client konnte nicht verbunden werden: {e}&quot;)
+        mqtt_client = None
+
+    asyncio.create_task(live_data_loop())
+    asyncio.create_task(mqtt_reconnect_loop())</pre>
+</div></div><p class="p1"><br /></p><p class="p1"><strong style="font-size: 16.0px;letter-spacing: -0.006em;">2. Kontinuierliches Publishing der Luftqualität</strong></p><p class="p3">Im bestehenden <span class="s2">live_data_loop()</span> werden regelmäßig Sensordaten verarbeitet und das ermittelte Luftqualitätslevel per MQTT veröffentlicht:</p><pre><br /></pre><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">async def live_data_loop():
+    global mqtt_client
+
+    while True:
+        try:
+            raw_line = sensor_reader.lese_daten()
+            if not raw_line:
+                await asyncio.sleep(1)
+                continue
+
+            rating_vals = sensor_reader.get_rating_measurements(raw_line)
+            rules = get_air_quality_rules()
+            overall_quality = rules.get_overall_air_quality(rating_vals)
+            overall_quality_str = air_quality_to_string(overall_quality)
+
+            if mqtt_client:
+                try:
+                    mqtt_client.publish(overall_quality_str)
+                except Exception as e:
+                    print(f&quot;Fehler beim MQTT Publish: {e} - MQTT Client wird neu verbunden&quot;)
+                    mqtt_client = None  # Löst reconnect aus
+
+        except Exception as e:
+            print(f&quot;Error in live data loop: {e}&quot;)
+
+        await asyncio.sleep(1)</pre>
+</div></div><p class="p1"><br /></p><a name="Bookmark163"></a><h3 style="text-decoration: none;" id="Bookmark163"><strong>3. Automatische Wiederverbindung zum MQTT-Broker</strong></h3><p class="p3">Der Task <span class="s2">mqtt_reconnect_loop()</span> sorgt dafür, dass der MQTT-Client, falls die Verbindung verloren geht, automatisch alle 30 Sekunden versucht, sich erneut mit dem Broker zu verbinden:</p><pre><br /></pre><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">async def mqtt_reconnect_loop():
+    global mqtt_client
+
+    while True:
+        if mqtt_client is None:
+            try:
+                mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
+                print(f&quot;[MQTT] Reconnected to broker at {MQTT_BROKER}:{MQTT_PORT}&quot;)
+            except Exception as e:
+                print(f&quot;[MQTT] Reconnect failed: {e}&quot;)
+        await asyncio.sleep(30)</pre>
+</div></div><p class="p1"><br /></p><p class="p1"><strong style="font-size: 20.0px;letter-spacing: -0.008em;">Funktionsweise und Vorteile</strong></p><ul style="text-decoration: none;"><li data-uuid="f6c622ea-9939-4178-b4d2-667a79244bbb"><p class="p1"><span class="s1"><strong>Robustheit</strong></span>: Bei temporären Verbindungsproblemen oder einem Neustart des Brokers baut die API die Verbindung automatisch wieder auf.</p></li><li data-uuid="a78eb73f-fdd2-4c16-9fed-015e481fff51"><p class="p1"><span class="s1"><strong>Performance</strong></span>: Die asynchronen Tasks beeinflussen die Performance der restlichen API-Endpunkte nicht spürbar.</p></li><li data-uuid="3921498d-a3af-483c-93d0-877fb67c7a82"><p class="p1"><span class="s1"><strong>Zuverlässigkeit</strong></span>: Externe Systeme (z. B. LED-Indikatoren oder Dashboards), die MQTT-Nachrichten abonnieren, erhalten kontinuierlich aktuelle Luftqualitätsdaten, auch bei kurzen Unterbrechungen.</p></li></ul><a name="Bookmark164"></a><h2 style="text-decoration: none;" id="Bookmark164"><strong>Fazit</strong></h2><p class="p3">Durch diese Integration wird eine stabile und wartungsarme Bereitstellung aktueller Luftqualitätsdaten über MQTT ermöglicht, ohne den laufenden Betrieb der API negativ zu beeinflussen.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span>Testing & Qualitätssicherung - PP</span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark65'>Testing &amp; Qualit&auml;tssicherung - PP</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark66"></a><h3 id="Bookmark66">1. Teststruktur und -aufbau</h3><p>Das Projekt verwendet das <strong>pytest-Framework</strong> für Unit-Tests. Alle Tests befinden sich gesammelt im Ordner <code>tests/</code>:</p><ul><li data-uuid="6c105c16-4e89-4ca1-a80b-d74fb1a0615d"><p><strong>test_db_helper.py</strong>:<br />Prüft die Datenbankinitialisierung, Session-Start/-Ende, Duplikatvermeidung usw.</p></li><li data-uuid="c2f80cac-6fb2-4d55-8d9c-de5afb51511b"><p><strong>test_save_data.py</strong>:<br />Testet das Schreiben von Messwerten und Logfiles sowie das Insert in die Datenbank.</p></li><li data-uuid="d025d040-dc46-4024-887e-34693da5bdb1"><p><strong>test_read_sensor_data.py</strong>:<br />Simuliert das Lesen von Sensordaten, DummySerial, Parsing und Extraktion der Werte.</p></li></ul><p>Alle Tests nutzen temporäre Datenbanken und Dateien, sodass beim Testen keine echten Produktionsdaten überschrieben werden.</p><hr /><a name="Bookmark67"></a><h3 id="Bookmark67">2. Testausführung</h3><p>Um alle Tests auszuführen:</p><ol><li data-uuid="16e9edff-c58a-4e6c-839d-d30b873ef887"><p><strong>Virtuelle Umgebung aktivieren (falls genutzt):</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">source venv/bin/activate</pre>
+</div></div><p><br /></p></li><li data-uuid="900dc732-5b89-40ae-912c-317ca3c8c7a8"><p><strong>In das Projekt-Hauptverzeichnis (eine Ebene über <code>tests/</code>) wechseln:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">cd &lt;projekt-root&gt;</pre>
+</div></div><p><br /></p></li><li data-uuid="9a9011a8-4fdb-4681-9498-0c470e057bb4"><p><strong>Pytest starten:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">pytest -q</pre>
+</div></div><p><br /></p></li></ol><p>Pytest sucht dabei automatisch nach allen Dateien, die mit <code>test_</code> beginnen, und führt alle enthaltenen Tests aus.</p><hr /><a name="Bookmark68"></a><h3 id="Bookmark68">3. Besondere Testmethoden und Tools</h3><ul><li data-uuid="4fdbc306-335c-42a3-ab3a-a03f650642f2"><p>Es werden <strong>Fixtures</strong> für temporäre Datenbanken (<code>tmp_path</code>, <code>monkeypatch</code>) verwendet, um ein sauberes Testumfeld zu gewährleisten.</p></li><li data-uuid="44a64a2b-7e67-49b4-9951-ea35ea776e9f"><p>Für die Sensorik wird eine DummySerial-Klasse mit monkeypatch als Ersatz für den echten Sensor genutzt, damit Tests unabhängig von echter Hardware laufen können.</p></li><li data-uuid="f001e749-2ef9-4928-917c-2c2eeb4e05c9"><p>Es wird geprüft, dass Logfiles geschrieben werden und dass die wichtigsten Ausgaben tatsächlich auf der Konsole erscheinen.</p></li></ul><hr /><a name="Bookmark69"></a><h3 id="Bookmark69">4. Beispiel-Testfall (test_save_data.py)</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">def test_insert_data_and_log(tmp_path, conn, capsys, monkeypatch):
+    raw = &quot;PM1.0,1.1,PM2.5,2.2,PM10,3.3,TEMP,20,HUMID,50&quot;
+    sid = start_session(conn, &quot;SessionX&quot;, None)
+    insert_data(conn, raw, sid)
+    cur = conn.cursor()
+    cur.execute(&quot;SELECT pm1_0, pm2_5, pm10, session_id FROM air_data&quot;)
+    pm1, pm2p5, pm10, sess = cur.fetchone()
+    assert pm1 == 1.1
+    assert pm2p5 == 2.2
+    assert pm10 == 3.3
+    assert sess == sid</pre>
+</div></div><p><br /></p><hr /><a name="Bookmark70"></a><h3 id="Bookmark70">5. Typische Fehlerbilder beim Testen und Lösungen</h3><ul><li data-uuid="0690c537-1e29-457f-b2d5-717fccb6b35a"><p><strong>ImportError für lokale Module:</strong><br />→ Tests immer aus dem Projekt-Root starten, <code>__init__.py</code>-Dateien in jedem Ordner anlegen.</p></li><li data-uuid="3d0b297b-e3fc-4721-a114-455f83d435b8"><p><strong>DB wird nicht überschrieben:</strong><br />→ Über <code>tmp_path</code> und Monkeypatch werden temporäre Datenbanken verwendet.</p></li><li data-uuid="7807900f-b18d-437c-a504-862feb190012"><p><strong>Hardwareabhängige Fehler:</strong><br />→ DummySerial und Fixtures ersetzen echte Sensorik beim Testen.</p></li></ul><hr /><a name="Bookmark71"></a><h3 id="Bookmark71">6. Aktualisieren der requirements.txt</h3><p>Nach Installation neuer Pakete:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c; gutter: false">pip freeze &gt; requirements.txt</pre>
+</div></div><p><br /></p><p>→ So sind alle Test-Abhängigkeiten dokumentiert und reproduzierbar</p><hr /><p>Mit diesem Testkonzept ist die Codequalität abgesichert, und Fehler werden frühzeitig im Entwicklungsprozess erkannt.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

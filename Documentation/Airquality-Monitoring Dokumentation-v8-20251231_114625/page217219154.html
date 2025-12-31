@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span>Airquality-Monitoring Dokumentation</span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark1'>Airquality-Monitoring Dokumentation</h1>
+</div>
+<div class='wiki-content'>
+<div class="contentLayout2">
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<div class="panel" style="border-width: 1px;"><div class="panelContent">
+<p>
+
+
+</p><div class="plugin_pagetree">
+
+        
+                <div>
+            <span class="plugin_pagetree_status hidden">Alles ausblenden</span>
+            <div class="plugin_pagetree_expandcollapse">
+                <a class="plugin_pagetree_expandall" href="#Bookmark195">Alles erweitern</a>  
+                <a class="plugin_pagetree_collapseall" href="#Bookmark196">Alles ausblenden</a>
+            </div>
+        </div>
+    
+    <ul role="list" aria-busy="true" class="plugin_pagetree_children_list plugin_pagetree_children_list_noleftspace">
+        <div class="plugin_pagetree_children">
+        </div>
+    </ul>
+
+    <fieldset class="hidden">
+        <input type="hidden" name="treeId" value="" />
+        <input type="hidden" name="treeRequestId" value="/plugins/pagetree/naturalchildren.action?decorator=none&amp;excerpt=false&amp;sort=position&amp;reverse=false&amp;disableLinks=false&amp;expandCurrent=false&amp;placement=" />
+        <input type="hidden" name="treePageId" value="217219154" />
+
+        <input type="hidden" name="noRoot" value="false" />
+        <input type="hidden" name="rootPageId" value="217219154" />
+
+        <input type="hidden" name="rootPage" value="" />
+        <input type="hidden" name="startDepth" value="5" />
+        <input type="hidden" name="spaceKey" value="AIR" />
+
+        <input type="hidden" name="i18n-pagetree.loading" value="Wird geladen..." />
+        <input type="hidden" name="i18n-pagetree.error.permission" value="Die Seitenhierarchie kann nicht geladen werden. Sie haben scheinbar keine Berechtigung die Wurzelseite zu sehen." />
+        <input type="hidden" name="i18n-pagetree.eeror.general" value="Ein Problem ist beim Abrufen der Seitenhierarchie aufgetreten. Bitte überprüfen Sie die Server-Log-Datei für weitere Informationen." />
+        <input type="hidden" name="loginUrl" value="/login.action?os_destination=%2Frest%2Fcex%2Flatest%2Fexport%2F217219154%3Fhash%3Df8808a22008a8002&amp;permissionViolation=true" />
+        <input type="hidden" name="mobile" value="false" />
+        <input type="hidden" name="placement" value="" />
+
+                <fieldset class="hidden">
+                            <input type="hidden" name="ancestorId" value="217219154" />
+                    </fieldset>
+    </fieldset>
+</div>
+</div></div><p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout two-equal" data-layout="two-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<a name="Bookmark2"></a><h2 id="Bookmark2">Diese Dokumentation durchsuchen</h2><p>    
+    
+
+
+</p><div class="search-macro search-macro-medium">
+    <form class="aui aui-dd-parent" name="livesearchForm" method="GET" action="/dosearchsite.action" role="search">
+        <fieldset class="search-macro-fields">
+            <div class="search-macro-query">
+                <input type="text" class="text" name="queryString" aria-label="Suche" placeholder="" autocomplete="off" />
+                            </div>
+                        <button type="submit" class="search-macro-button aui-button">
+                <span class="aui-icon aui-icon-small aui-iconfont-search">Suche</span>
+            </button>
+                        <input type="hidden" name="where" value="AIR" />
+            <input type="hidden" name="additional" value="space name" />
+            <input type="hidden" name="labels" value="" />
+            <input type="hidden" name="contentType" value="" />
+        </fieldset>
+    </form>
+    <div role="region" class="aui-dd-parent"></div>
+    <div role="alert" class="assistive" aria-live="polite"></div>
+</div></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<a name="Bookmark3"></a><h2 id="Bookmark3">Kürzlich aktualisierte Seiten</h2><p>    
+
+</p><div class="recently-updated recently-updated-concise">
+
+            <div class="hidden parameters">
+    <a name="Bookmark4"></a><input type="hidden" value="/plugins/recently-updated/changes.action?theme=concise&amp;pageSize=5&amp;spaceKeys=AIR&amp;contentType=page" id="Bookmark4" />
+</div>
+    <div class="results-container">
+        <ul>
+        <li class="update-item">
+        <div class="update-item-icon">
+            <span class="aui-icon content-type-page"></span>
+        </div>
+        <div class="update-item-content">
+                            <a href="page220726812.html#Bookmark29" title="API - SK">API - SK</a>
+            
+            <div class="update-item-meta">
+                Juli 23, 2025<span class="separator"> • </span>aktualisiert von <a class="confluence-userlink url fn" data-username="k67464" href="https://confluence.student.fiw.fhws.de:8443/display/~k67464" title="https://confluence.student.fiw.fhws.de:8443/display/~k67464">Krutzsch, Steffen</a><span class="separator"> • </span><a class="changes-link" href="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726812&amp;selectedPageVersions=11&amp;selectedPageVersions=10" title="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726812&amp;selectedPageVersions=11&amp;selectedPageVersions=10">Änderung anzeigen</a>            </div>
+        </div>
+    </li>
+        <li class="update-item">
+        <div class="update-item-icon">
+            <span class="aui-icon content-type-page"></span>
+        </div>
+        <div class="update-item-content">
+                            <a href="page220726412.html#Bookmark57" title="Device Steuerung durch WLAN-Steckdosen - SK">Device Steuerung durch WLAN-Steckdosen - SK</a>
+            
+            <div class="update-item-meta">
+                Juli 23, 2025<span class="separator"> • </span>aktualisiert von <a class="confluence-userlink url fn" data-username="k67464" href="https://confluence.student.fiw.fhws.de:8443/display/~k67464" title="https://confluence.student.fiw.fhws.de:8443/display/~k67464">Krutzsch, Steffen</a><span class="separator"> • </span><a class="changes-link" href="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726412&amp;selectedPageVersions=8&amp;selectedPageVersions=7" title="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726412&amp;selectedPageVersions=8&amp;selectedPageVersions=7">Änderung anzeigen</a>            </div>
+        </div>
+    </li>
+        <li class="update-item">
+        <div class="update-item-icon">
+            <span class="aui-icon content-type-page"></span>
+        </div>
+        <div class="update-item-content">
+                            <a href="page220725964.html#Bookmark44" title="Datenbank-Design &amp; Implementierung - PP">Datenbank-Design &amp; Implementierung - PP</a>
+            
+            <div class="update-item-meta">
+                Juli 23, 2025<span class="separator"> • </span>aktualisiert von <a class="confluence-userlink url fn" data-username="k65931" href="https://confluence.student.fiw.fhws.de:8443/display/~k65931" title="https://confluence.student.fiw.fhws.de:8443/display/~k65931">Putz, Pascal</a><span class="separator"> • </span><a class="changes-link" href="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220725964&amp;selectedPageVersions=5&amp;selectedPageVersions=4" title="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220725964&amp;selectedPageVersions=5&amp;selectedPageVersions=4">Änderung anzeigen</a>            </div>
+        </div>
+    </li>
+        <li class="update-item">
+        <div class="update-item-icon">
+            <span class="aui-icon content-type-page"></span>
+        </div>
+        <div class="update-item-content">
+                            <a href="page220726055.html#Bookmark37" title="Session-Management im Code - PP">Session-Management im Code - PP</a>
+            
+            <div class="update-item-meta">
+                Juli 23, 2025<span class="separator"> • </span>aktualisiert von <a class="confluence-userlink url fn" data-username="k65931" href="https://confluence.student.fiw.fhws.de:8443/display/~k65931" title="https://confluence.student.fiw.fhws.de:8443/display/~k65931">Putz, Pascal</a><span class="separator"> • </span><a class="changes-link" href="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726055&amp;selectedPageVersions=5&amp;selectedPageVersions=4" title="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726055&amp;selectedPageVersions=5&amp;selectedPageVersions=4">Änderung anzeigen</a>            </div>
+        </div>
+    </li>
+        <li class="update-item">
+        <div class="update-item-icon">
+            <span class="aui-icon content-type-page"></span>
+        </div>
+        <div class="update-item-content">
+                            <a href="page220726244.html#Bookmark65" title="Testing &amp; Qualitätssicherung - PP">Testing &amp; Qualitätssicherung - PP</a>
+            
+            <div class="update-item-meta">
+                Juli 23, 2025<span class="separator"> • </span>aktualisiert von <a class="confluence-userlink url fn" data-username="k65931" href="https://confluence.student.fiw.fhws.de:8443/display/~k65931" title="https://confluence.student.fiw.fhws.de:8443/display/~k65931">Putz, Pascal</a><span class="separator"> • </span><a class="changes-link" href="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726244&amp;selectedPageVersions=3&amp;selectedPageVersions=2" title="https://confluence.student.fiw.fhws.de:8443/pages/diffpagesbyversion.action?pageId=220726244&amp;selectedPageVersions=3&amp;selectedPageVersions=2">Änderung anzeigen</a>            </div>
+        </div>
+    </li>
+    </ul>
+<div class="more-link-container">
+    <a class="more-link" href="https://confluence.student.fiw.fhws.de:8443/plugins/recently-updated/changes.action?theme=concise&amp;pageSize=5&amp;startIndex=5&amp;searchToken=30319&amp;spaceKeys=AIR&amp;contentType=page" title="https://confluence.student.fiw.fhws.de:8443/plugins/recently-updated/changes.action?theme=concise&amp;pageSize=5&amp;startIndex=5&amp;searchToken=30319&amp;spaceKeys=AIR&amp;contentType=page">Mehr anzeigen</a>
+    <aui-spinner class="waiting-image" size="small" alt="Bitte warten" />
+</div>
+    </div>
+</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

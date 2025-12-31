@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span>Datenbank-Design & Implementierung - PP</span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark44'>Datenbank-Design &amp; Implementierung - PP</h1>
+</div>
+<div class='wiki-content'>
+<hr /><a name="Bookmark45"></a><h3 id="Bookmark45">1. Was sind „Sessions“? – Konzept und Nutzen</h3><p><strong>Sessions</strong> bezeichnen im Projekt jeweils einen definierten Zeitraum, in dem eine zusammenhängende Messreihe stattfindet.<br />Eine Session bündelt alle Messwerte, die zu einer bestimmten Umgebung, einem bestimmten Raum, Experiment oder Testablauf gehören.</p><a name="Bookmark46"></a><h4 id="Bookmark46"><strong>Hintergrund und Motivation:</strong></h4><ul><li data-uuid="0412b76c-f14d-4a85-a791-15ec1a6edd05"><p>Sensoren werden oft an unterschiedlichen Orten (z. B. Wohnzimmer, Schlafzimmer, Außenbereich) oder für verschiedene Experimente verwendet.</p></li><li data-uuid="ec5429d3-014d-476c-8d78-a73f0052c912"><p>Ohne Sessions wären alle Messwerte in der Datenbank nicht eindeutig zuordenbar – eine Auswertung nach Ort, Zeitraum oder Test würde unmöglich bzw. sehr aufwendig.</p></li></ul><a name="Bookmark47"></a><h4 id="Bookmark47"><strong>Eine Session umfasst immer:</strong></h4><ul><li data-uuid="b3ba0c3e-b785-4668-8a14-429077051388"><p><strong>Name:</strong> Klar zuordnungsbare Bezeichnung (z. B. „Wohnzimmer-Abend“, „Outdoor-Test Juli“)</p></li><li data-uuid="4c82767e-ac1b-4cd0-b004-d7981044c18a"><p><strong>Location:</strong> Optional – genauere Beschreibung des Standorts</p></li><li data-uuid="1f2266f4-eea7-40ce-8db2-fcb372ea6fe1"><p><strong>Session-Typ:</strong> Steuert, ob das Indoor- oder Outdoor-Regelwerk zur Bewertung verwendet wird</p></li><li data-uuid="cd6918d7-9434-41be-b3a5-99e10b3db1c4"><p><strong>Start- und End-Zeitpunkt:</strong> Automatisch durch das Skript gesetzt, um den Zeitbereich der Messung eindeutig abzubilden</p></li><li data-uuid="42a6d64c-a964-400f-bffb-fcd1a89d86e4"><p><strong>Verknüpfte Messwerte:</strong> Alle Luftdaten (Feinstaub, Temperatur, etc.), die während der Session erfasst werden</p></li></ul><a name="Bookmark48"></a><h4 id="Bookmark48"><strong>Ablauf im System:</strong></h4><ul><li data-uuid="41b43951-4b3a-4207-a449-a3207d63eef7"><p>Beim Start einer neuen Messung gibt der Nutzer Name, Ort und Typ an (z. B. per CLI-Parameter).</p></li><li data-uuid="1d0e740f-31e9-43de-8383-821e009bb9e2"><p>Das Skript legt (wenn nötig) eine neue Session in der Datenbank an und merkt sich die ID.</p></li><li data-uuid="f59bb1da-cde6-4c5b-8964-1cf324a8371f"><p>Alle im weiteren Verlauf eingelesenen Sensorwerte werden dieser Session-ID zugeordnet.</p></li><li data-uuid="fe923137-e19b-4d42-be09-4cd2d99f38c1"><p>Am Ende der Messung wird die Session per Zeitstempel abgeschlossen.</p></li></ul><a name="Bookmark49"></a><h4 id="Bookmark49"><strong>Vorteile des Session-Konzepts:</strong></h4><ul><li data-uuid="12ea01b9-e21e-4542-ba30-fea281f3316a"><p>Messdaten bleiben immer klar gruppiert und nachvollziehbar (z. B. für Reports, Diagramme, Export)</p></li><li data-uuid="2e3414b6-d31a-4ae8-810b-4e314f0bea8b"><p>Parallele oder aufeinanderfolgende Versuchsreihen können sauber unterschieden werden</p></li><li data-uuid="c9e4aa09-1a52-467b-bfee-1bb8fa758e7a"><p>Session-Management verhindert doppelte Namen und damit Datenchaos in der Datenbank</p></li></ul><hr /><a name="Bookmark50"></a><h3 id="Bookmark50">2. Aufbau und Tabellenstruktur</h3><p>Das Projekt nutzt eine SQLite-Datenbank (<code>air_quality.db</code>) im Unterordner <code>database/</code>.<br />Die Datenbank besteht aus zwei logisch verknüpften Tabellen:</p><a name="Bookmark51"></a><h4 id="Bookmark51"><strong>sessions</strong></h4><p>Speichert Metadaten zu einzelnen Mess-Sessions.</p><ul><li data-uuid="47d9f381-78f1-4eb8-a1f6-ddc4deab59f4"><p><code>id</code> (INTEGER, PRIMARY KEY, AUTOINCREMENT): Eindeutige Session-ID</p></li><li data-uuid="d582e2f7-abd2-4e46-a33b-687f3f89d2a2"><p><code>name</code> (TEXT, UNIQUE, NOT NULL): Bezeichnung der Messreihe (muss eindeutig sein)</p></li><li data-uuid="0ee31ec9-f24a-4fb1-a5a6-5610e2925d43"><p><code>location</code> (TEXT): Optionaler Ortsname (z.B. &quot;Wohnzimmer&quot;, &quot;Labor&quot;)</p></li><li data-uuid="ff5142a3-857c-4ca3-8b53-9084edb43482"><p><code>start_time</code> (TEXT, NOT NULL): Zeitstempel beim Start der Session</p></li><li data-uuid="4811e24c-f4cb-461e-b868-88d1e32ec4c0"><p><code>end_time</code> (TEXT): Zeitstempel beim Beenden der Session</p></li><li data-uuid="cb3d4c52-1a4f-487a-b7e9-30ea353cdfa2"><p><code>session_type</code> (TEXT, NOT NULL): &quot;indoor&quot; oder &quot;outdoor&quot; für das Regelwerk</p></li></ul><a name="Bookmark52"></a><h4 id="Bookmark52"><strong>air_data</strong></h4><p>Speichert alle ausgelesenen Messdaten und referenziert immer eine Session.</p><ul><li data-uuid="3dad4e38-ac10-4265-b7d3-654ec5e6e989"><p><code>id</code> (INTEGER, PRIMARY KEY, AUTOINCREMENT): Eindeutige Messwert-ID</p></li><li data-uuid="5e6361d6-2a3d-4e56-be43-98e0dfda6b27"><p><code>timestamp</code> (TEXT, NOT NULL): Zeitpunkt der Messung</p></li><li data-uuid="a498561f-aa4e-4eed-95b4-5807f15da61b"><p><code>pm1_0</code>, <code>pm2_5</code>, <code>pm10</code> (REAL): Feinstaubwerte aus der Messzeile</p></li><li data-uuid="3a7d9262-7b58-4c03-97a9-73789f422e26"><p><code>raw_line</code> (TEXT): Die vollständige, rohe Sensorzeile (zur späteren Analyse)</p></li><li data-uuid="ea23a984-f906-4751-b244-16866a5bc666"><p><code>session_id</code> (INTEGER, NOT NULL): Fremdschlüssel auf <code><a class="external-link" href="http://sessions.id" rel="nofollow">sessions.id</a></code></p></li></ul><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false"># CREATE TABLE Beispiel aus db_helper.py
+c.execute('''
+    CREATE TABLE IF NOT EXISTS sessions (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        name          TEXT    NOT NULL UNIQUE,
+        location      TEXT,
+        start_time    TEXT    NOT NULL,
+        end_time      TEXT,
+        session_type  TEXT    NOT NULL
+    );
+''')
+c.execute('''
+    CREATE TABLE IF NOT EXISTS air_data (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp   TEXT    NOT NULL,
+        pm1_0       REAL,
+        pm2_5       REAL,
+        pm10        REAL,
+        raw_line    TEXT,
+        session_id  INTEGER NOT NULL,
+        FOREIGN KEY(session_id) REFERENCES sessions(id)
+    );
+''')</pre>
+</div></div><p><br /></p><p><code class="language-python">
+</code></p><pre><br /></pre><hr /><a name="Bookmark53"></a><h3 id="Bookmark53">3. Beziehungen und Regeln</h3><ul><li data-uuid="1c9135c6-77fd-485b-b4e7-9dffbcd86176"><p><strong>Eindeutige Sessionnamen:</strong><br />Jede Session hat einen eindeutigen Namen (UNIQUE).<br />Ein erneuter Start mit gleichem Namen führt dazu, dass Messwerte der selben Session-ID zugeordnet werden.</p></li><li data-uuid="5adcc55a-717d-4e1c-aaf2-e71e854909ad"><p><strong>Session-Typ:</strong><br /><code>&quot;indoor&quot;</code> oder <code>&quot;outdoor&quot;</code> steuert das Bewertungsregelwerk.</p></li><li data-uuid="3c59a973-dd99-4044-ab8e-2a57512d6c98"><p><strong>Fremdschlüssel:</strong><br />Messwerte sind immer einer Session zugeordnet (<code>session_id</code> als FOREIGN KEY).</p></li></ul><hr /><a name="Bookmark54"></a><h3 id="Bookmark54">4. Datenhaltung und Insert-Logik</h3><p><strong>Session-Handling:</strong></p><ul><li data-uuid="174d4d9a-b0e1-4460-89a9-571a788f15cb"><p>Neue Session wird über <code>start_session</code> angelegt:</p><ul><li><p>Prüft, ob der Name schon existiert; falls ja, wird die Session-ID zurückgegeben.</p></li><li><p>Legt sonst eine neue Session an.</p></li></ul></li><li data-uuid="9b692234-1b78-4728-a3e0-4c49533fadcc"><p>Beenden einer Session (<code>end_session</code>) trägt einen Endzeitpunkt ein.</p></li></ul><p><strong>Messwert-Speicherung:</strong></p><ul><li data-uuid="dc250b93-eb1f-4585-ba65-188cffa68638"><p>Über <code>insert_data</code> werden Messwerte mit Zeitstempel, extrahierten PM-Werten und der kompletten Rohzeile in <code>air_data</code> gespeichert.</p></li><li data-uuid="57c05e49-9a41-4a03-9618-bc7d99c0a2a1"><p>Jeder Datensatz bekommt den zugehörigen <code>session_id</code>.</p></li></ul><p><strong>Beispiel (aus <code>save_data.py</code>):</strong></p><p><br /></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">def insert_data(conn: sqlite3.Connection, raw_line: str, session_id: int):
+    ...
+    c.execute('''
+        INSERT INTO air_data
+          (timestamp, pm1_0, pm2_5, pm10, raw_line, session_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (ts, pm1, pm2p5, pm10, raw_line, session_id))
+    ...</pre>
+</div></div><p><br /></p><p><code class="language-python">
+</code></p><hr /><a name="Bookmark55"></a><h3 id="Bookmark55">5. Fehlerbehandlung und Migration</h3><ul><li data-uuid="cc271d4b-3d3c-4a18-855b-2c32774c4fc9"><p><strong>Fehlerbehandlung:</strong><br />Jeder Datenbankzugriff ist mit <code>try/except</code> abgesichert. Fehler werden auf der Konsole protokolliert.</p></li><li data-uuid="5e7c3627-1b3c-4155-96df-6285a4c693b7"><p><strong>Schema-Änderungen/Migration:</strong><br />Bei Änderungen an den Tabellen (z. B. neue Spalten wie <code>session_type</code>) wird empfohlen, die alte Datenbankdatei zu löschen – beim nächsten Start legen die Python-Skripte die DB automatisch neu mit aktuellem Schema an.</p></li></ul><hr /><a name="Bookmark56"></a><h3 id="Bookmark56">6. Visualisierung </h3><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" draggable="false" data-image-src="/download/attachments/220725964/image-2025-7-19_14-13-58.png?version=1&amp;modificationDate=1752927238000&amp;api=v2" data-unresolved-comment-count="0" data-linked-resource-id="220725974" data-linked-resource-version="1" data-linked-resource-type="attachment" data-linked-resource-default-alias="image-2025-7-19_14-13-58.png" data-base-url="https://confluence.student.fiw.fhws.de:8443" data-linked-resource-content-type="image/png" data-linked-resource-container-id="220725964" data-linked-resource-container-version="5" tabindex="0" alt="" src="img_2.png" width="624" height="246" /></span></p><hr /><p><strong>Zusammengefasst:</strong></p><ul><li data-uuid="45521369-80ed-43f4-8b32-4cb124e032a4"><p>Die SQLite-Datenbank ist übersichtlich, modular und schützt vor Redundanzen (z. B. durch UNIQUE-Constraint auf <code>name</code>).</p></li><li data-uuid="b3d87abe-b700-4190-a5ba-4ebdb7086b42"><p>Messdaten und Sessions sind sauber voneinander getrennt und durch einen Fremdschlüssel verknüpft.</p></li><li data-uuid="61632161-35c5-407e-93bd-d01b4b4d07e9"><p>Die Einbindung neuer Felder (wie weitere Sensorkanäle) ist leicht erweiterbar.</p></li></ul><hr /><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span>API - SK</span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark29'>API - SK</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark30"></a><h1 id="Bookmark30">Überblick</h1><p><code><span>api.py</span></code><span> ist das zentrale Backend des Air‑Quality‑Monitor‑Projekts und bildet die REST‑/WebSocket‑Schnittstelle für das Frontend. Es basiert auf </span><span><strong>FastAPI</strong></span><span> und kümmert sich um</span></p><ul><li data-uuid="8f203400-2453-4514-adab-9a711b31db3e"><p><span>Continuous Live‑Daten‑Streaming vom Luftsensor</span></p></li><li data-uuid="153abcef-dbdc-40ef-a15b-2392526f9d2e"><p><span>Persistenz über SQLite</span></p></li><li data-uuid="14d17567-a44a-4fb2-aee3-0358544a850d"><p><span>Gerätesteuerung (Ventilator &amp; Aroma‑Diffusor)</span></p></li><li data-uuid="2443f4fe-1427-48c9-b499-3c9b11ec72f2"><p><span>MQTT‑Weiterleitung des Luftqualitäts‑Ratings</span></p></li></ul><p>FastAPI wurde gegenüber Flask gewählt, da es eine bessere native Unterstützung für WebSockets bietet, was für die zuverlässige Echtzeitübertragung der Sensordaten entscheidend ist.</p><a name="Bookmark31"></a><h1 id="Bookmark31">Zentrale Methoden</h1><a name="Bookmark32"></a><h3 id="Bookmark32">Startup &amp; Initialisierung</h3><ul><li data-uuid="894bac4b-b459-4a1e-8459-9a02e6dbc146">Initialisiert Datenbank, Sensor, MQTT‑Client und holt sich den aktuellen Status der WLAN-Steckdosen.</li><li data-uuid="05db023b-205d-41c1-ab19-7e30182492fb">Startet die beiden Hintergrund‑Tasks <code>live_data_loop()</code> und <code>mqtt_reconnect_loop()</code>.</li></ul><p><br /></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">@app.on_event(&quot;startup&quot;)
+async def startup_event():
+    global sensor_reader, mqtt_client
+    conn = init_db()
+    conn.close()
+    
+    try:
+        sensor_reader = SensorReader()
+        print(&quot;Sensor erfolgreich initialisiert&quot;)
+    except Exception as e:
+        print(f&quot;Sensor konnte nicht initialisiert werden: {e}&quot;)
+        sensor_reader = None
+
+ try:
+        ventilator = TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
+        diffusor = TP100Controller(DIFFUSOR_IP, TAPO_EMAIL, TAPO_PASSWORD)
+        last_vent_state = ventilator.get_status()
+        last_diff_state = diffusor.get_status()
+    except Exception as e:
+        print(f&quot;Fehler beim Abrufen des Gerätestatus beim Start: {e}&quot;)
+
+    try:
+        mqtt_client = MQTTClient(MQTT_BROKER, MQTT_PORT, MQTT_TOPIC)
+        print(f&quot;MQTT Client verbunden mit {MQTT_BROKER}:{MQTT_PORT}, Topic: {MQTT_TOPIC}&quot;)
+    except Exception as e:
+        print(f&quot;MQTT Client konnte nicht verbunden werden: {e}&quot;)
+        mqtt_client = None
+    
+    asyncio.create_task(live_data_loop())
+    asyncio.create_task(mqtt_reconnect_loop())
+</pre>
+</div></div><a name="Bookmark33"></a><h3 id="Bookmark33">Zentraler Loop</h3><p>Die Funktion <code>live_data_loop()</code> bildet das Herz des Systems: Er sorgt dafür, dass Messdaten im Sekundentakt zu aussagekräftigen Informationen werden, bei Bedarf Geräte ansteuert und alle Ergebnisse sofort an UI &amp; IoT verteilt.</p><div class="table-wrap"><table class="wrapped confluenceTable" style="font-size:1.0em"><tbody><tr><th class="confluenceTh"><p>Schritt</p></th><th class="confluenceTh"><p>Hauptverantwortung</p></th><th class="confluenceTh"><p>Was passiert</p></th></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>1 Erfassen</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Sensordaten einsammeln</p></td><td class="confluenceTd" style="padding:0.5em"><p>Jede Sekunde liest <code>sensor_reader.lese_daten()</code> eine kommagetrennte Key-Value Liste (&quot;Rohzeile&quot;).</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>2 Umwandeln</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Rohzeile→ Python‑Dict</p></td><td class="confluenceTd" style="padding:0.5em"><p><code>sensor_reader.parse_sensor_line(raw_line)</code>transformiert die eingelesene Rohzeile in ein Python-Dict.</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>3 Persistieren</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>In Datenbank schreiben</p></td><td class="confluenceTd" style="padding:0.5em"><p>Läuft eine Session, speichert <code>insert_data()</code> die Rohzeile + Timestamp in SQLite. </p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>4 Extrahieren</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Bewertungsmesswerte extrahieren</p></td><td class="confluenceTd" style="padding:0.5em"><p><code>sensor_reader.get_rating_measurements(raw_line)</code> filtert die fünf Parameter, die für die Luftqualitäts‑Regeln relevant sind (<span style="color:var(--ds-text,#333333);">PM2.5, CO2eq, VOCAQI, TEMP, HUMID</span>).</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>5 Bewerten</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Luftqualitätratings berechnen</p></td><td class="confluenceTd" style="padding:0.5em"><p><code>AirQualityRules</code> vergleicht Messwerte mit Schwellen und erzeugt ein Gesamt‑Rating und Ratings der Bewertungsmesswerte („SEHR GUT“ … „SEHR SCHLECHT“). </p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>6 Veröffentlichen</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Ampel mit MQTT steuern</p></td><td class="confluenceTd" style="padding:0.5em"><p><span>Das Gesamt‑Rating wird an ein MQTT‑Topic gepublisht und steuert Ampel.</span></p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>7 Steuerung</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Geräte automatisch steuern</p></td><td class="confluenceTd" style="padding:0.5em"><p><code>AirControlRules</code> entscheidet anhand des Ratings, ob Ventilator und Aroma‑Diffusor per TP100‑Steckdose ein‑/aus­geschaltet werden, falls der automatische Modus aktiviert ist.</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>8 Aufbereiten &amp; Verteilen</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Daten für Frontend aufbereiten und broadcasten</p></td><td class="confluenceTd" style="padding:0.5em"><p><span>Ein JSON‑Payload (Messwerte, Ratings, Farben, Aktor‑Status …) wird an alle WebSockets gebroadcastet.</span></p></td></tr><tr><td class="confluenceTd" style="padding:0.5em"><p><strong>9 Takten &amp; Resilienz</strong></p></td><td class="confluenceTd" style="padding:0.5em"><p>Loop stabil halten</p></td><td class="confluenceTd" style="padding:0.5em"><p>`await asyncio.sleep(1)` stellt 1 Hz sicher. Ein globales `try/except` fängt Fehler ab; nach kurzer Wartezeit (5 s) startet der nächste Zyklus – der Dienst bleibt dauerhaft online.</p></td></tr></tbody></table></div><p>Bemerkung zur Bewertung:</p><p>Bei <code>AirQualityRules</code> kann man zwischen Indoor und Outdoor Regeln entscheiden. In <code>api.py</code> wird standardmäßig die Indoor Regeln verwendet, da dies der typische Anwendungsfall ist. Wenn eine Outdoor Session aktiv ist, werden hingegen die Outdoor Regeln verwendet. <code>get_air_quality_rules()</code> holt sich dabei von der aktuellen Session den Typ (Indoor/Outdoor) und dementsprechend gibt es die passenden Regeln von AirQualityRules zurück.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">async def live_data_loop():
+    global current_session_id, mqtt_client
+    global ventilator_auto, diffusor_auto, last_vent_state, last_diff_state
+
+    while True:
+        try:
+            if not sensor_reader:
+                await asyncio.sleep(1)
+                continue
+
+            raw_line = sensor_reader.lese_daten()
+            if not raw_line:
+                await asyncio.sleep(1)
+                continue
+
+            # Vollständige Parser-Daten holen
+            parsed = sensor_reader.parse_sensor_line(raw_line)
+
+            # Wenn Session aktiv, Raw-Line in DB speichern
+            if current_session_id:
+                conn = get_db_connection()
+                from database.save_data import insert_data
+                insert_data(conn, raw_line, current_session_id)
+                conn.close()
+
+            # Nur die fünf Schlüsselmesswerte für die Rating-Logik extrahieren
+            rating_vals = sensor_reader.get_rating_measurements(raw_line)
+
+            # Gesamt- und Einzel-Rating berechnen
+            rules = get_air_quality_rules()
+            overall_quality = rules.get_overall_air_quality(rating_vals)
+            overall_quality_str = air_quality_to_string(overall_quality)
+
+            # MQTT Publish
+            if mqtt_client:
+                try:
+                    mqtt_client.publish(overall_quality_str)
+                except Exception as e:
+                    print(f&quot;Fehler beim MQTT Publish: {e} - MQTT Client wird neu verbunden&quot;)
+                    mqtt_client = None # löst den reconnect im mqtt_reconnect_loop() aus
+
+            # Automatische Steuerung
+            control_rules = get_air_control_rules()
+            if ventilator_auto:
+                global last_vent_state
+                if control_rules.needs_ventilation(rating_vals) and last_vent_state != &quot;on&quot;:
+                    TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD).turn_on()
+                    last_vent_state = &quot;on&quot;
+                elif control_rules.ventilation_not_needed(rating_vals) and last_vent_state != &quot;off&quot;:
+                    TP100Controller(VENTILATOR_IP, TAPO_EMAIL, TAPO_PASSWORD).turn_off()
+                    last_vent_state = &quot;off&quot;
+
+            if diffusor_auto:
+                global last_diff_state
+                if control_rules.diffusor_should_be_on(rating_vals) and last_diff_state != &quot;on&quot;:
+                    TP100Controller(DIFFUSOR_IP, TAPO_EMAIL, TAPO_PASSWORD).turn_on()
+                    last_diff_state = &quot;on&quot;
+                elif control_rules.diffusor_should_be_off(rating_vals) and last_diff_state != &quot;off&quot;:
+                    TP100Controller(DIFFUSOR_IP, TAPO_EMAIL, TAPO_PASSWORD).turn_off()
+                    last_diff_state = &quot;off&quot;
+
+            print(
+                &quot;[DEBUG] Steckdosen  |  &quot;
+                f&quot;Ventilator: {'AUTO' if ventilator_auto else 'MAN'} / {last_vent_state or 'unknown'}   ||   &quot;
+                f&quot;Diffusor: {'AUTO' if diffusor_auto else 'MAN'} / {last_diff_state or 'unknown'}&quot;
+            )
+
+            ratings = {}
+            for param, val in rating_vals.items():
+                rating = rules.rate_parameter(val, param)
+                ratings[param] = {
+                    'value': val,
+                    'rating': air_quality_to_string(rating),
+                    'color': get_air_quality_colors()[air_quality_to_string(rating)]
+                }
+
+            measurements_all = {
+                k: v for k, v in parsed.items()
+                if isinstance(v, (int, float))
+            }
+
+            # Payload bauen und broadcasten
+            live_data = {
+                'timestamp': datetime.now().isoformat(),
+                'measurements': measurements_all,
+                'air_quality_rating': ratings,
+                'overall_quality': overall_quality_str,
+                'overall_color': get_air_quality_colors()[overall_quality_str],
+                'parsed_data': parsed,
+                'session_type': get_current_session_type().value,
+                'ventilator_auto':  ventilator_auto,
+                'diffusor_auto':    diffusor_auto,
+                'ventilator_state': last_vent_state,
+                'diffusor_state':   last_diff_state
+            }
+            await broadcast_live_data(live_data)
+
+            await asyncio.sleep(1)
+
+        except Exception as e:
+            print(f&quot;Error in live data loop: {e}&quot;)
+            await asyncio.sleep(5)
+</pre>
+</div></div><p>Bemerkung zu TP100Controller:</p><p>Das <code>TP100Controller</code>-Objekt wird gezielt nur dann erzeugt, wenn eine Steueraktion tatsächlich erforderlich ist. Wir verzichten bewusst auf globale Instanzen, da eine Verbindung zur Steckdose nur im Moment der Steuerung benötigt wird. So bleiben Verbindungsfehler auf einzelne Steuerbefehle begrenzt, ohne das Gesamtsystem zu beeinträchtigen.</p><a name="Bookmark34"></a><h3 id="Bookmark34">Websocket</h3><p><strong>WebSocket <code>/ws/live-data</code> </strong></p><ul><li data-uuid="32829a57-a6c4-459d-9a0a-385e62b01f6b"><p>Der Client baut einmalig eine WS‑Verbindung zum Server auf.<br /><code>await websocket.accept()</code> bestätigt den Handshake.</p></li><li data-uuid="f0a86b22-f39f-4b6b-9ca1-fa09b82b9773"><p>Der verbundene Socket wird in die globale Liste <code>websocket_connections</code> aufgenommen.<br />So behält das Backend alle offenen Kanäle im Blick.</p></li><li data-uuid="c767a7ed-4fce-46b2-9637-991ccbe0b3a2"><p>Danach wartet die Coroutine mit <code>await websocket.receive_text()</code> auf eingehende Nachrichten.<br /><em>Der Server erwartet aber nichts – der Aufruf blockiert lediglich, bis der Client die Verbindung schließt.</em><br />Ergebnis: Push‑Only‑Kanal ohne Ping‑Pong‑Logik.</p></li><li data-uuid="380738d6-878f-4180-9f31-4ea2d05104ee"><p>Im <code>finally</code>‑Block wird der Socket wieder aus der Liste entfernt, egal ob der Client sauber schließt oder die Verbindung abreißt.<br />Damit verhindert man Speicher‑/Listenleichen.</p></li></ul><p><br /></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">@app.websocket(&quot;/ws/live-data&quot;)
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    websocket_connections.append(websocket)
+    try:
+        await websocket.receive_text()
+    finally:
+        if websocket in websocket_connections:
+            websocket_connections.remove(websocket)
+</pre>
+</div></div><p><strong><code>broadcast_live_data(data)</code> </strong></p><ul><li data-uuid="ee590b8e-4b64-45bb-ab33-07971fd7831f"><p>Wird jede Sekunde vom Live‑Data‑Loop aufgerufen.<br />Liefert ein JSON‑Serialisat des Mess‑Snapshots an alle aktuell verbundenen Clients.</p></li><li data-uuid="50bffe33-7fc0-4d9c-9c7f-fab2c0316723"><p>Sofortiger Exit, wenn niemand verbunden ist ⇒ spart CPU.</p></li><li data-uuid="2763c0f9-0c01-4a6f-b6bb-3956a5317c69"><p>Die Liste wird vor dem Iterieren kopiert (<code>connections_copy</code>).<br />Grund: Parallel könnten andere Koroutinen denselben Pool verändern (Clients verbinden/trennen).<br />Die Kopie schützt vor „size changed during iteration“.</p></li><li data-uuid="6a7afce5-4bfd-409e-b011-9cc24540247d"><p>Fehler‑Handling pro Socket:<br /><code>try … except</code> fängt z. B. „Broken pipe“ ab, loggt den Fehler und entfernt nur den betroffenen Socket.<br />So bleibt der Broadcast für alle übrigen Clients intakt.</p></li><li data-uuid="3cf1d1fe-df6a-4d18-afe5-e851166d7876"><p>Serialisierung mit <code>json.dumps(data)</code> unmittelbar vor dem Senden; Clients erhalten reine Textframes.</p></li></ul><p><br /></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">async def broadcast_live_data(data: Dict[str, Any]):
+    if not websocket_connections:
+        return
+    
+    connections_copy = websocket_connections.copy()
+    
+    for websocket in connections_copy:
+        try:
+            await websocket.send_text(json.dumps(data))
+        except Exception as e:
+            print(f&quot;Error sending to WebSocket: {e}&quot;)
+            if websocket in websocket_connections:
+                websocket_connections.remove(websocket)
+</pre>
+</div></div><a name="Bookmark35"></a><h1 id="Bookmark35">Weitere API Endpoints</h1><p>Im folgenden ein Überblick über die API Endpoints, die neben dem Websocket noch zur Verfügung stehen:</p><div class="table-wrap"><table class="wrapped confluenceTable" style="font-size:1.0em"><colgroup><col /><col /><col /></colgroup><tbody><tr><th scope="col" class="confluenceTh">Methode </th><th scope="col" class="confluenceTh">Pfad</th><th scope="col" class="confluenceTh">Kurzbeschreibung </th></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/ </code></td><td class="confluenceTd" style="padding:0.5em">Health-Check – bestätigt, dass die API läuft</td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions</code></td><td class="confluenceTd" style="padding:0.5em">Liste aller Sessions (aktiv &amp; beendet)</td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions/{session_id}</code></td><td class="confluenceTd" style="padding:0.5em"><p>Details einer einzelnen Session</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">POST </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions</code></td><td class="confluenceTd" style="padding:0.5em"><p>Neue Session anlegen (Name, Ort, Typ)</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">PUT </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions/{session_id}/end</code></td><td class="confluenceTd" style="padding:0.5em"><p>Session beenden und Datenerfassung stoppen</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions/{session_id}/data</code></td><td class="confluenceTd" style="padding:0.5em"><p>Erhalte Messungen der Session</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/sessions/{session_id}/data/since/{timestamp}</code></td><td class="confluenceTd" style="padding:0.5em"><p>Messungen einer Session ab Zeitstempel</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/live-data</code></td><td class="confluenceTd" style="padding:0.5em"><p>Einmalige Momentaufnahme der aktuellen Messwerte</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET</td><td class="confluenceTd" style="padding:0.5em"><code>/devices/status</code></td><td class="confluenceTd" style="padding:0.5em"><p>Status von Ventilator &amp; Diffusor (TP100)</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">PUT</td><td class="confluenceTd" style="padding:0.5em"><code>/devices/ventilator/control</code></td><td class="confluenceTd" style="padding:0.5em"><p>Ventilator ON / OFF / AUTO</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">PUT </td><td class="confluenceTd" style="padding:0.5em"><code>/devices/diffusor/control</code></td><td class="confluenceTd" style="padding:0.5em"><p>Diffusor ON / OFF / AUTO</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/air-quality/colors</code></td><td class="confluenceTd" style="padding:0.5em"><p>Farbcodes für Ratings</p></td></tr><tr><td class="confluenceTd" style="padding:0.5em">GET </td><td class="confluenceTd" style="padding:0.5em"><code>/current-session-info</code></td><td class="confluenceTd" style="padding:0.5em"><p>Daten zur aktiven Session</p></td></tr></tbody></table></div><a name="Bookmark36"></a><h1 id="Bookmark36">API Server starten</h1><p><br /></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">uvicorn api:app --host 0.0.0.0 --port 8000
+</pre>
+</div></div><p>Dieser Befehl startet das FastAPI-Backend mit dem ASGI‑Server <strong>Uvicorn</strong> und macht die API im lokalen Netzwerk unter Port 8000 verfügbar.<br />ASGI (Asynchronous Server Gateway Interface) ist der moderne Standard für asynchrone Python‑Webanwendungen und ermöglicht u. a. WebSockets und gleichzeitige Verbindungen.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

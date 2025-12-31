@@ -1,0 +1,297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span>Wichtige Code-Bestandteile im Detail - CM</span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark139'>Wichtige Code-Bestandteile im Detail - CM</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark140"></a><h3 id="Bookmark140">config.h</h3><p class="p1">Definiert als einzige Datei alle projektweiten Konstanten.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">// WLAN
+static constexpr char WIFI_SSID[]     = &quot;ssid&quot;;
+static constexpr char WIFI_PASSWORD[] = &quot;password&quot;;
+
+// MQTT
+static constexpr char MQTT_SERVER[]   = &quot;172.20.10.4&quot;;
+static constexpr uint16_t MQTT_PORT   = 1883;
+static constexpr char MQTT_TOPIC[]    = &quot;airquality/command/led&quot;;
+
+// NeoPixel
+static constexpr uint8_t  LED_PIN     = 5;
+static constexpr uint16_t NUMPIXELS   = 12;
+
+// Fading
+static constexpr uint16_t FADE_STEPS_DEFAULT    = 50;
+static constexpr uint16_t FADE_INTERVAL_DEFAULT = 20; // ms</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Diese Datei zentralisiert alle hardware- und netzwerkbezogenen Konstanten. Änderungen – etwa an SSID, MQTT-Serveradresse oder LED-Anzahl – werden hier vorgenommen, ohne den übrigen Code anzupassen.</blockquote><a name="Bookmark141"></a><h3 id="Bookmark141">FadeHelper</h3><p>Stellt eine <strong>interpolate()</strong>-Funktion bereit, die zwei RGB-Werte über eine gegebene Schrittzahl linear überblendet.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">inline RGB interpolate(const RGB&amp; start, const RGB&amp; target, uint16_t step, uint16_t maxSteps) {
+  if (maxSteps == 0) return start;
+  float frac = float(step) / maxSteps;
+  return {
+    uint8_t(start.r + (target.r - start.r) * frac),
+    uint8_t(start.g + (target.g - start.g) * frac),
+    uint8_t(start.b + (target.b - start.b) * frac)
+  };
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Die Funktion berechnet einen Zwischenfarbwert auf einer geraden Linie zwischen <span class="s1">start</span> und <span class="s1">target</span> nach dem Verhältnis <span class="s1">step/maxSteps</span>. So entsteht ein sanfter Farbverlauf.</blockquote><p><br /></p><a name="Bookmark142"></a><h3 id="Bookmark142">LedController</h3><p>Kapselt alle LED-Operationen inklusive sanfter Farbwechsel und Blink-Modus.</p><p><strong>LedController::begin() &amp; Konstruktor</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">LedController::LedController(uint8_t pin, uint16_t numPixels)
+ : strip(numPixels, pin, NEO_GRB + NEO_KHZ800),
+   _curR(0), _curG(0), _curB(0),
+   _fadeSteps(FADE_STEPS_DEFAULT),
+   _fadeInterval(FADE_INTERVAL_DEFAULT),
+   _currentStep(0), _fading(false),
+   _blinking(false), _blinkInterval(0), _lastBlinkTime(0), _blinkState(false)
+{}
+
+void LedController::begin() {
+  strip.begin();
+  strip.show(); // Alle Pixel zunächst auf „aus“
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong><span style="letter-spacing: 0.0px;color:var(--ds-chart-gray-bold,#8590a2);">Der Konstruktor legt den NeoPixel-Streifen an Pin 5 mit 12 LEDs an und initialisiert alle Status-Variablen. </span><span class="s1" style="letter-spacing: 0.0px;color:var(--ds-chart-gray-bold,#8590a2);">begin()</span><span style="letter-spacing: 0.0px;color:var(--ds-chart-gray-bold,#8590a2);"> startet die Bibliothek und stellt sicher, dass zu Beginn keine LEDs leuchten.</span></blockquote><p><strong>setColor(...)</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void LedController::setColor(uint8_t r, uint8_t g, uint8_t b) {
+  _prevR = r; _prevG = g; _prevB = b;
+  _curR = r; _curG = g; _curB = b;
+  for (uint16_t i = 0; i &lt; strip.numPixels(); i++)
+    strip.setPixelColor(i, strip.Color(r, g, b));
+  strip.show();
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Schaltet alle LEDs sofort auf die übergebenen RGB-Werte. Speichert die aktuelle und die zuletzt dauerhaft gesetzte Farbe in den Member-Variablen <span class="s1">_curR/G/B und _prevR/G/B</span>.</blockquote><p><strong>setColorSmooth(...)<br /></strong>→ Initialisiert ein Fading-Intervall:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void LedController::setColorSmooth(uint8_t r, uint8_t g, uint8_t b, uint16_t steps, uint16_t interval) {
+  stopBlinking();
+  _prevR = r; _prevG = g; _prevB = b;
+  _startR = _curR; _startG = _curG; _startB = _curB;
+  _targetR = r;    _targetG = g;    _targetB = b;
+  _fadeSteps = steps;
+  _fadeInterval = interval;
+  _currentStep = 0;
+  _lastFadeTime = millis();
+  _fading = true;
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Leitet ein sanftes Überblenden von der aktuellen Farbe (<span class="s1">_curR/G/B</span>) zur Ziel­farbe (<span class="s1">r/g/b</span>) ein. <span class="s1">steps</span> und <span class="s1">interval</span> definieren die Dauer und Geschwindigkeit des Fadings.</blockquote><p><strong>blink(...)</strong><br />→ Toggle-Logik für Warnungen:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void LedController::blink(uint8_t r, uint8_t g, uint8_t b, uint32_t intervalMs) {
+  stopBlinking();
+  _blinkColor = { r, g, b };
+  _blinkInterval = intervalMs;
+  _lastBlinkTime = millis();
+  _blinkState = false;
+  _blinking = true;
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung: <br /></strong>Aktiviert den Blinkmodus: Die LEDs wechseln in der angegebenen Farbe <span class="s1">r/g/b</span> im Intervall <span class="s1">intervalMs</span> zwischen an und aus.</blockquote><p><strong>handleFade()</strong><br />→ Muss im Hauptloop aufgerufen werden und Entscheidet zwischen Blinken und Fading:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void LedController::handleFade() {
+  uint32_t now = millis();
+
+  // 1) Wenn Blinken aktiv: Blinken primär abarbeiten
+  if (_blinking) {
+    if (now - _lastBlinkTime &gt;= _blinkInterval) {
+      _lastBlinkTime = now;
+      _blinkState = !_blinkState;
+      for (uint16_t i = 0; i &lt; strip.numPixels(); i++) {
+        if (_blinkState)
+          strip.setPixelColor(i, strip.Color(_blinkColor.r, _blinkColor.g, _blinkColor.b));
+        else
+          strip.setPixelColor(i, strip.Color(0, 0, 0));
+      }
+      strip.show();
+    }
+    return;
+  }
+
+  // 2) Sonst: Fading Schritt ausführen, wenn fällig
+  if (!_fading) return;
+  if (now - _lastFadeTime &lt; _fadeInterval) return;
+  _lastFadeTime = now;
+  if (++_currentStep &gt; _fadeSteps) {
+    setColor(_targetR, _targetG, _targetB);
+    _fading = false;
+    return;
+  }
+
+  RGB start  = { _startR, _startG, _startB };
+  RGB target = { _targetR, _targetG, _targetB };
+  RGB cur    = interpolate(start, target, _currentStep, _fadeSteps);
+
+  setColor(cur.r, cur.g, cur.b);
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Wird in jeder Loop-Iteration aufgerufen und entscheidet:<br /><ol><li data-uuid="8c325005-8c1c-4b42-bcc0-935d4b527e46">Ob gerade geblinkt werden soll (bei erhöhter Gefahr)</li><li data-uuid="ae21dbd0-50a7-48a8-99c4-359b8e5cab0b">Ob ein Fading-Schritt fällig ist → führt diesen per interpolate() aus.</li></ol></blockquote><a name="Bookmark143"></a><h3 id="Bookmark143"><br />MqttManager</h3><p>Vereinfacht die Verbindung zum MQTT-Broker und leitet eingehende Nachrichten an eine Callback-Funktion weiter.</p><p><strong>MqttManager::generateClientId()</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: shell; gutter: false">void MqttManager::generateClientId() {
+  uint64_t chipid = ESP.getEfuseMac();
+  char buf[32];
+  snprintf(buf, sizeof(buf), &quot;ESP32_%04X%08X&quot;, (uint16_t)(chipid&gt;&gt;32), (uint32_t)chipid);
+  _clientId = String(buf);
+}</pre>
+</div></div><blockquote><p><strong>Erklärung:<br /></strong><span style="letter-spacing: 0.0px;">Erzeugt eine eindeutige Client-ID für die MQTT-Verbindung.<br />Dazu wird die weltweit einzigartige MAC-Adresse des ESP32-Chips verwendet und als Zeichenkette im Format &quot;ESP32_&lt;ChipID&gt;&quot; formatiert.<br />So wird sichergestellt, dass auch wenn mehrere Geräte gleichzeitig betrieben werden, diese sich nicht gegenseitig aus dem MQTT-Netzwerk verdrängen.</span></p></blockquote><p><br /></p><p><strong>MqttManager::begin(...)<br /></strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void MqttManager::begin(const char* server, uint16_t port) {
+  generateClientId();
+  _client.setServer(server, port);
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Initialisiert die MQTT-Verbindung mit der angegebenen Server-Adresse und Portnummer.<br />Vor dem Setzen der Verbindungsdaten wird einmalig die eindeutige Client-ID generiert.<br />Damit ist das Gerät korrekt im MQTT-Broker registriert und bereit für alle folgenden Verbindung- und Anmeldevorgänge.</blockquote><p><strong>MqttManager::setCommandCallback(...)<br /></strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void MqttManager::setCommandCallback(std::function&lt;void(const char*, const uint8_t*, unsigned int)&gt; cb) {
+  _client.setCallback([cb](char* topic, byte* payload, unsigned int length){
+    cb(topic, payload, length);
+  });
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Registriert die vom Anwender übergebene Callback-Funktion (<span class="s1">cb</span>), die ausgeführt wird, wenn eine neue MQTT-Nachricht eintrifft. Da PubSubClient eine anders geformte Signatur für seinen Callback erwartet, wird hier ein Lambda benutzt, das die Parameter einfach an <span class="s1">cb </span>weiterleitet.</blockquote><p><br /><strong>MqttManager::reconnect()</strong><br />→ Exponentielles Back-off bis zur erfolgreichen Verbindung:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void MqttManager::reconnect() {
+  if (_client.connected()) return;
+  unsigned long now = millis();
+  if (now - _lastReconnectAttempt &lt; _reconnectDelay) return;
+  _lastReconnectAttempt = now;
+  Serial.printf(&quot;MQTT connect (%s), delay %lums\n&quot;, _clientId.c_str(), _reconnectDelay);
+  if (_client.connect(_clientId.c_str())) {
+    _client.subscribe(MQTT_TOPIC);
+    Serial.println(&quot;MQTT verbunden&quot;);
+    _reconnectDelay = 2000;
+  } else {
+    Serial.println(&quot;MQTT Verbindungsfehler.&quot;);
+    _reconnectDelay = min(_reconnectDelay * 2, (unsigned long)60000);
+  }
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Sorgt dafür, dass das Gerät dauerhaft mit dem MQTT-Broker verbunden bleibt.<br />Es wird in jedem Loop-Durchlauf geprüft, ob eine Verbindung besteht.<br /><ul><li><span class="s1"><strong>Erfolgreicher Connect: </strong></span><span style="letter-spacing: 0.0px;">Sobald die Verbindung steht, wird das gewünschte Topic abonniert und das Initial-Delay zurückgesetzt.</span></li><li><span class="s1"><strong>Fehlversuch + Back-off: </strong></span><span style="letter-spacing: 0.0px;">Bei Verbindungsproblemen wird der nächste Verbindungsversuch um einen exponentiellen Zeitraum verzögert (maximal 60 Sekunden), sodass das System weiterhin auf andere Aufgaben reagieren kann und nicht blockiert.</span></li></ul></blockquote><a name="Bookmark144"></a><h3 id="Bookmark144">WiFiManager.cpp</h3><p>Kapselt Aufbau und Überwachung der WLAN-Verbindung</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: shell; gutter: false">unsigned long WiFiManager::_lastAttempt = 0;
+
+void WiFiManager::begin(const char* ssid, const char* password) {
+  WiFi.begin(ssid, password);
+  Serial.print(&quot;WLAN verbindet&quot;);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print('.');
+  }
+  Serial.println(&quot;\nWLAN verbunden!&quot;);
+}
+
+void WiFiManager::maintain() {
+  if (WiFi.status() != WL_CONNECTED) {
+    unsigned long now = millis();
+    if (now - _lastAttempt &gt; 5000) { // Alle 5s versuchen
+      Serial.println(&quot;WLAN getrennt, reconnect...&quot;);
+      WiFi.reconnect();
+      _lastAttempt = now;
+    }
+  }
+}</pre>
+</div></div><blockquote><p><strong>Erklärung</strong></p><p>Die Klasse übernimmt das Initialisieren der WLAN-Verbindung anhand der in <em>config.h</em> hinterlegen SSID und Passwort.<br />Im Setup baut <em>begin()</em> die Verbindung auf und blockiert bis zum erfolgreichen Verbindungsaufbau.<br />Die Methode <em>maintain()</em> überprüft in jeder Loop-Iteration, ob die Verbindung noch steht und stößt im Fehlerfall alle 5 Sekunden einen Reconnect an, um unnötige Wiederholungen zu vermeiden und das System zu entlasten.</p></blockquote><a name="Bookmark145"></a><h3 id="Bookmark145">main.cpp</h3><p>Orchestriert Setup, Loop und die Übersetzung eingehender MQTT-Nachrichten in LED-Aktionen.</p><p><strong>AirQualityLevel-Enum &amp; Parser<br /></strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">enum class AirQualityLevel {
+  SehrGut,
+  Gut,
+  Maessig,
+  Schlecht,
+  SehrSchlecht,
+  Unbekannt
+};
+
+AirQualityLevel parseAirQuality(const String&amp; msg) {
+  String m = msg;
+  m.toLowerCase();
+  m.trim();
+  if (m == &quot;sehr gut&quot;) return AirQualityLevel::SehrGut;
+  if (m == &quot;gut&quot;)      return AirQualityLevel::Gut;
+  if (m == &quot;maessig&quot;)  return AirQualityLevel::Maessig;
+  if (m == &quot;schlecht&quot;) return AirQualityLevel::Schlecht;
+  if (m == &quot;sehr schlecht&quot;) return AirQualityLevel::SehrSchlecht;
+  return AirQualityLevel::Unbekannt;
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><p style="text-decoration: none;"><strong>Erklärung:</strong></p><ul><li style="text-decoration: none;">Das <strong>Enum</strong> definiert alle möglichen Luftgüte-Stufen, die das System kennt.</li><li data-uuid="704f5dd4-7df4-4a25-b123-8361cdad7a55">Die <strong>Parser-Funktion</strong> wandelt eine empfangene Textnachricht in einen dieser Enum-Werte um.</li><li data-uuid="8758544f-7032-4496-a726-0a471ba1c129">Durch <strong>toLowerCase()</strong> und <strong>trim()</strong> wird das Message-Format robust gegen Groß-/Kleinschreibung und überflüssige Leerzeichen gemacht.</li><li data-uuid="f749aee8-f03b-4bf6-af12-410321fd6786">Treffer in den <strong>if</strong>-Blöcken ordnen das Ergebnis der passenden Stufe zu → unbekannte oder fehlerhafte Nachrichten landen in <strong>Unbekannt</strong>.</li></ul></blockquote><p><br /></p><p><strong>MQTT-Callback<br /></strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void onMqttMessage(const char* topic, const uint8_t* payload, unsigned int length) {
+  StaticJsonDocument&lt;256&gt; doc;
+  DeserializationError err = deserializeJson(doc, payload, length);
+  if (!err &amp;&amp; doc.containsKey(&quot;r&quot;) &amp;&amp; doc.containsKey(&quot;g&quot;) &amp;&amp; doc.containsKey(&quot;b&quot;)) {
+    int r = doc[&quot;r&quot;];
+    int g = doc[&quot;g&quot;];
+    int b = doc[&quot;b&quot;];
+    uint16_t steps   = doc[&quot;steps&quot;]   | FADE_STEPS_DEFAULT;
+    uint16_t delayMs = doc[&quot;delayMs&quot;] | FADE_INTERVAL_DEFAULT;
+    leds.setColorSmooth(safeColor(r), safeColor(g), safeColor(b), steps, delayMs);
+    return;
+  }
+
+  // Ansonsten: reiner Text-Messagehandler
+  String msg;
+  for (unsigned int i = 0; i &lt; length; i++) msg += (char)payload[i];
+  msg.trim();
+
+  AirQualityLevel level = parseAirQuality(msg);
+  switch (level) {
+    case AirQualityLevel::SehrGut:
+      leds.stopBlinking();
+      leds.setColorSmooth(0, 255, 0);
+      break;
+    case AirQualityLevel::Gut:
+      leds.stopBlinking();
+      leds.setColorSmooth(127, 255, 0);
+      break;
+    case AirQualityLevel::Maessig:
+      leds.stopBlinking();
+      leds.setColorSmooth(255, 165, 0);
+      break;
+    case AirQualityLevel::Schlecht:
+      leds.stopBlinking();
+      leds.setColorSmooth(200, 0, 0);
+      break;
+    case AirQualityLevel::SehrSchlecht:
+      leds.blink(255, 0, 0, 250);
+      break;
+    default:
+      leds.stopBlinking();
+      leds.setColorSmooth(128, 128, 128);
+      break;
+  }
+}</pre>
+</div></div><blockquote style="text-decoration: none;"><strong>Erklärung:<br /></strong>Reagiert auf eingehende MQTT-Nachrichten. Entweder wird ein JSON-Kommando (<span class="s1">r/g/b</span>, <span class="s1">steps</span>, <span class="s1">delayMs</span>) ausgeführt oder eine einfache Textnachricht in eine Luftgüte-Stufe übersetzt, um die Ampelfarbe bzw. Blinkmodus zu setzen.</blockquote><p><strong>Setup<br /></strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void setup() {
+  Serial.begin(115200);
+  leds.begin();
+  WiFiManager::begin(WIFI_SSID, WIFI_PASSWORD);
+  mqttMgr.begin(MQTT_SERVER, MQTT_PORT);
+  mqttMgr.setCommandCallback(onMqttMessage);
+}</pre>
+</div></div><blockquote><p><strong>Erklärung:</strong><strong><br /></strong></p><ol><li data-uuid="d578e6b6-bd07-404a-bedb-f131b4e66020"><strong>Serial.begin(115200) → </strong>Initialisiert die serielle Schnittstelle zur Ausgabe von Debug- und Statusmeldungen im Monitor.</li><li data-uuid="563ad1ce-694b-42d2-8ceb-02c1e6db6990"><strong>leds.begin() → </strong>Startet den NeoPixel-Ring und löscht alle LEDs (sichert einen definierten Ausgangszustand).</li><li data-uuid="7753d101-0d18-44a5-b129-9d880279b76e"><strong>WiFiManager::begin(...) → </strong>Baut die WLAN-Verbindung mithilfe der definierten SSID und des Passworts auf und blockiert bis zum Erfolg.</li><li data-uuid="a9bc8d18-07db-453b-bfbe-b9ff16d0292a"><strong>mqttMgr.begin(...) → </strong>Konfiguriert die Adresse und den Port des MQTT-Brokers.</li><li data-uuid="cbfe687b-0339-4e0d-b33a-83735fe8a0a8"><strong>mqttMgr.setCommandCallback(onMqttMessage) → </strong>Registriert die Funktion, die eingehende MQTT-Nachrichten verarbeitet und in LED-Befehle übersetzt</li></ol></blockquote><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: c++; gutter: false">void loop() {
+  leds.handleFade();
+  WiFiManager::maintain();
+  mqttMgr.loop();
+}</pre>
+</div></div><blockquote><p><strong>Erklärung:</strong></p><ol><li data-uuid="b77393af-a28c-4442-8b55-43b6fba73243"><strong>leds.handleFade() → </strong>Führt in jeder Iteration entweder einen Blink- oder Fade-Schritt aus, je nachdem, welcher Modus aktiv ist.</li><li data-uuid="8aba51d1-6bbb-4bae-91c9-686c7eb0151c"><strong>WiFiManager::maintain() → </strong>Überprüft den WLAN-Status und verbindet bei einem Abbruch automatisch neu.</li><li data-uuid="c97361d5-bc72-4107-b0ad-fae29d8acfc9"><strong>mqttMgr.loop() → </strong>Hält die MQTT-Verbindung am Leben, verarbeitet eingehende Nachrichten und löst bei Bedarf den Reconnect aus.</li></ol></blockquote><a name="Bookmark146"></a><h3 id="Bookmark146">platform.ini</h3><p>Enthält alle zentralen Build- und Umgebungsoptionen für das PlatformIO-Projekt.<br />→ Definiert das verwendete Board, das ESP32-Framework, die genutzten Bibliotheken sowie die serielle Monitor-Geschwindigkeit.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false">[env:rymcu-esp32-devkitc]
+platform = espressif32
+board = rymcu-esp32-devkitc
+framework = arduino
+monitor_speed = 115200
+lib_deps =
+    bblanchon/ArduinoJson@^6.20.0
+    adafruit/Adafruit NeoPixel@^1.10.0
+    knolleary/PubSubClient@^2.8</pre>
+</div></div><blockquote><p class="p1"><strong>Erklärung:</strong></p><ul><li data-uuid="92baa450-5504-41e8-9ed4-f3be54c48095"><p class="p1"><span class="s1"><strong>platform</strong></span>: Gibt die Plattform (<em><span class="s2">espressif32</span></em> für ESP32) an.</p></li><li data-uuid="d153abb1-117d-4dd2-b296-7a6041845299"><p class="p1"><span class="s1"><strong>board</strong></span>: Wählt das konkrete Board-Modell (hier <em><span class="s2">rymcu-esp32-devkitc</span></em>).</p></li><li data-uuid="143a6454-9de9-4dbd-90a4-96e0abf72329"><p class="p1"><span class="s1"><strong>framework</strong></span>: Nutzt das Arduino-Framework für einfaches ESP32-Programming.</p></li><li data-uuid="22ebc819-4c7d-4109-9c15-a3c12104bcd4"><p class="p1"><span class="s1"><strong>monitor_speed</strong></span>: Stellt die Geschwindigkeit des seriellen Monitors ein (115200 Baud).</p></li><li data-uuid="c51e8b8d-e404-4be1-bb1b-e40bba817e25"><span class="s1"><strong>lib_deps</strong></span>: Listet alle verwendeten Bibliotheken samt Versionsnummern, die bei jedem Build automatisch installiert werden:<ul><li class="p1"><em><span class="s1">ArduinoJson</span></em> für das Parsen von JSON-Nachrichten.</li><li><p class="p1"><em><span class="s1">Adafruit NeoPixel</span></em> zur Ansteuerung des LED-Rings.</p></li><li><p class="p1"><em><span class="s1">PubSubClient</span></em> für MQTT-Kommunikation.</p></li></ul></li></ul><p class="p4">Damit ist sichergestellt, dass das Projekt auf jedem Rechner und in jeder Entwicklungsumgebung <span class="s2"><strong>reproduzierbar</strong></span> gebaut werden kann.</p></blockquote><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

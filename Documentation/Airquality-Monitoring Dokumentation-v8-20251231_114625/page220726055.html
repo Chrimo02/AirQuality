@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span>Session-Management im Code - PP</span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark37'>Session-Management im Code - PP</h1>
+</div>
+<div class='wiki-content'>
+<hr /><a name="Bookmark38"></a><h3 id="Bookmark38"><strong>1. Session-Beginn und -Beendigung (API-Workflow)</strong></h3><p>Das Projekt unterstützt ein vollautomatisiertes Session-Management, sowohl für die Kommandozeile als auch über die REST-API (z. B. für das Web-Frontend).</p><a name="Bookmark39"></a><h4 id="Bookmark39"><strong>Start einer Session</strong></h4><ul><li data-uuid="3d4ea2f2-89c6-4f9f-bae0-f493057da564"><p><strong>Per API</strong> (POST <code>/sessions</code>):</p><ul><li><p>Der User (CLI oder Frontend) gibt einen eindeutigen Session-Namen, optional einen Ort, sowie den Typ („indoor“ oder „outdoor“) an.</p></li><li><p>Die Funktion <code>start_session()</code> prüft, ob schon eine offene Session mit diesem Namen existiert:</p><ul><li><p><strong>Falls ja:</strong> Die vorhandene Session wird weiterverwendet, Messwerte werden angehängt.</p></li><li><p><strong>Falls nein:</strong> Eine neue Session wird mit aktuellem Startzeitpunkt, Name, Ort, Typ angelegt und als aktiv markiert.</p></li></ul></li><li><p>Die aktuell aktive Session-ID wird global gemerkt (<code>current_session_id</code>), sodass alle Messwerte automatisch korrekt zugeordnet werden.</p></li></ul></li><li data-uuid="7c11d500-e736-4d2b-b4f1-6ea8e314bc03"><p><strong>Typischer Aufruf (CLI oder API):</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false"># Beispiel (Frontend oder automatisiert)
+POST /sessions
+{
+    &quot;name&quot;: &quot;Wohnzimmer Abend&quot;,
+    &quot;location&quot;: &quot;EG&quot;,
+    &quot;session_type&quot;: &quot;indoor&quot;
+}</pre>
+</div></div><p><br /></p><p><em>(Im CLI-Workflow wäre es äquivalent zu:)</em></p></li><li data-uuid="0867a6ff-a023-4309-86ac-dc8ce0101c61"><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false"> python main.py -s &quot;Wohnzimmer Abend&quot; -l &quot;EG&quot; --type indoor
+ </pre>
+</div></div></li></ul><hr /><a name="Bookmark40"></a><h4 id="Bookmark40"><strong>Beenden einer Session</strong></h4><ul><li data-uuid="7d28abe2-85e7-4faa-accb-acd8413d53a2"><p><strong>Per API</strong> (PUT <code>/sessions/{session_id}/end</code>):</p><ul><li><p>Die Funktion <code>end_session()</code> trägt den Endzeitpunkt in die Datenbank ein.</p></li><li><p>Die Session ist damit geschlossen und kann nicht erneut fortgeführt werden.</p></li><li><p>Nach dem Beenden wird <code>current_session_id</code> wieder auf <code>None</code> gesetzt.</p></li></ul></li></ul><hr /><a name="Bookmark41"></a><h4 id="Bookmark41"><strong>Session-Fortsetzung und Duplikatvermeidung</strong></h4><ul><li data-uuid="90a6978e-fc52-43b1-a973-3d74f0524f98"><p>Wird versucht, eine Session mit gleichem Namen neu zu starten, prüft die Datenbanklogik, ob bereits eine aktive (nicht beendete) Session existiert:</p><ul><li><p><strong>Falls ja:</strong> Die Messwerte werden weiterhin unter dieser Session-ID gespeichert.</p></li><li><p><strong>Falls nein:</strong> Es wird eine neue Session mit diesem Namen angelegt.</p></li></ul></li></ul><hr /><a name="Bookmark42"></a><h3 id="Bookmark42"><strong>2. Vorteile der Session-Verwaltung</strong></h3><ul><li data-uuid="e03edf6f-067d-41a5-9494-ec944ed9a850"><p><strong>Daten werden immer eindeutig zugeordnet</strong> und bleiben gruppierbar (z. B. alle Messwerte im &quot;Wohnzimmer&quot; lassen sich gemeinsam auswerten).</p></li><li data-uuid="ae03cabb-9a19-4c0a-b80c-ee76b3c09f69"><p><strong>Sessionnamen sind eindeutig</strong> (UNIQUE-Constraint) – ein versehentliches doppeltes Anlegen wird unterbunden.</p></li><li data-uuid="7f67a816-afc0-4430-bfca-15c3ff7a5193"><p><strong>Jeder Session kann ein Ort (location) und Typ (indoor/outdoor) zugewiesen werden.</strong></p></li><li data-uuid="cffba255-cf3c-40d4-a30c-4567f1f8b452"><p><strong>Bequeme Weiterverarbeitung</strong>: Die Session-ID wird für jeden Messwert automatisch mitgespeichert.</p></li></ul><hr /><a name="Bookmark43"></a><h3 id="Bookmark43"><strong>3. Beispiele aus dem Code</strong></h3><p><strong>Start einer Session (API):</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">@app.post(&quot;/sessions&quot;, response_model=SessionResponse)
+async def create_session(session: SessionCreate):
+    global current_session_id
+    conn = get_db_connection()
+    session_id = start_session(
+        conn, 
+        session.name, 
+        session.location, 
+        session.session_type
+    )
+    current_session_id = session_id
+    ...</pre>
+</div></div><p><br /></p><p><strong>Session-Ende (API):</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">@app.put(&quot;/sessions/{session_id}/end&quot;)
+async def end_session_endpoint(session_id: int):
+    global current_session_id
+    conn = get_db_connection()
+    end_session(conn, session_id)
+    if current_session_id == session_id:
+        current_session_id = None
+    ...</pre>
+</div></div><p><br /></p><p><code class="language-python">
+</code></p><hr /><p><strong>Zusammengefasst:</strong></p><ul><li data-uuid="2534decf-1388-4649-a0bc-6ea8b4490945"><p>Das Session-Management sorgt für klare Datentrennung, verhindert Namensdopplungen und ermöglicht eine lückenlose Messhistorie.</p></li><li data-uuid="0a1cf007-3fc7-4680-8a49-bed6a9aed1d0"><p>Sessions können bequem per API oder CLI gestartet und beendet werden – ein automatisiertes Handling aller Zuordnungen ist gewährleistet.</p></li></ul><p><br /></p><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span>Abschluss und Erweiterungspotenzial - PP</span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark190'>Abschluss und Erweiterungspotenzial - PP</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark191"></a><h3 id="Bookmark191"><strong>Fazit</strong></h3><p>Das AirQuality-Projekt bietet eine robuste und lokal vollständig betreibbare Lösung für die <strong>Erfassung, Bewertung und Visualisierung von Luftqualitätsdaten</strong>.<br />Durch die Containerisierung mit Docker Compose und die konsequente Modularisierung (Sensorik, Datenbank, Bewertung, UI) ist das System nicht nur wartbar und ausbaufähig, sondern auch besonders datensouverän und unabhängig von externen Cloud-Diensten.</p><p>Das flexible Session-Konzept, die klare Trennung von Sensorik, Datenhaltung und Regelwerk sowie die offene Architektur (API, Frontend, Datenexport) ermöglichen vielfältige Einsatzmöglichkeiten – vom Raumluft-Monitoring über wissenschaftliche Experimente bis zu automatisierten Smart-Home-Lösungen.</p><hr /><a name="Bookmark192"></a><h3 id="Bookmark192"><strong>Erweiterungspotenzial</strong></h3><ul><li data-uuid="e76fc3ca-566d-4186-a47b-00d1e4cada9e"><p><strong>Session-Management im Frontend:</strong><br />Das Frontend kann erweitert werden, um Sessions direkt aus der Benutzeroberfläche zu löschen, zu archivieren oder umzubenennen (inklusive Bestätigungsdialog und ggf. Undo-Option).</p></li><li data-uuid="ee04abd0-b57e-4e22-92e3-3223d0822b00"><p><strong>Barrierefreiheit &amp; Nutzerfreundlichkeit:</strong><br />Features wie Darkmode, kontrastreiche Themes, größere Schriften und Screenreader-Unterstützung sorgen für eine barrierefreie Nutzung – insbesondere für Menschen mit Sehbeeinträchtigungen.</p></li><li data-uuid="b9ea4e33-6c70-4978-ac2b-ad38aa07ffe8"><p><strong>Flexible Konfiguration durch Umgebungsvariablen:</strong><br />Zugangsdaten, API-URLs und weitere netzwerk- oder sicherheitsrelevante Einstellungen sollten nicht mehr hardcodiert, sondern zentral über eine <code>.env</code>-Datei gepflegt und im Code/Container automatisch eingelesen werden.<br />Das erleichtert die Wartung und den Betrieb in unterschiedlichen Umgebungen und erhöht die Sicherheit.</p></li><li data-uuid="06b766de-c9aa-4cb1-a1ac-be5bb8c12e70"><p><strong>Erweiterung auf weitere Aktorik und Sensorik:</strong><br />Die Plattform kann einfach um neue Sensoren (z. B. Schall, Helligkeit, weitere Luftgüteparameter) oder Aktoren (Luftreiniger, Fensteröffner, Heizungssteuerung etc.) ergänzt werden.</p></li><li data-uuid="9f7ef57b-2125-4464-8fd9-bb7afd25ddeb"><p><strong>Alarm- und Benachrichtigungssystem:</strong><br />Bei Überschreitung von Schwellenwerten könnten automatische Warnungen per E-Mail, Push-Nachricht, Telegram oder andere Kanäle versendet werden.</p></li><li data-uuid="a76f6f3c-3918-4b21-a5cc-5c73b5d361a3"><p><strong>Benutzerverwaltung:</strong><br />Für größere Teams oder öffentliche Installationen kann eine Benutzerverwaltung mit verschiedenen Rollen (Admin, Gast, User) ergänzt werden.</p></li><li data-uuid="6d97e3f2-c40b-4334-b0c1-2878efc581d2"><p><strong>Mehrsprachigkeit:</strong><br />Die Oberfläche kann für die Nutzung in mehreren Sprachen (z. B. Deutsch/Englisch) vorbereitet werden.</p></li><li data-uuid="5a6b837b-5682-4b0b-8f53-eae9833e5726"><p><strong>Integration externer Datenquellen:</strong><br />Ein Abgleich der eigenen Messwerte mit offiziellen Wetter- oder Umweltwerten (z. B. vom Umweltbundesamt) könnte zusätzliche Informationen liefern.</p></li><li data-uuid="aa123ed3-92a2-4eb9-9b74-d8ba9ca527b3"><p><strong>Automatisierte Datensicherung:</strong><br />Automatische Backups der SQLite-Datenbank, z. B. per Cronjob oder als zusätzlicher Service im Docker Compose-Stack.</p></li></ul><p><br /></p><hr /><a name="Bookmark193"></a><h3 id="Bookmark193"><strong>Lessons Learned</strong></h3><ul><li data-uuid="cf98cfa1-acca-4b0b-8b47-407c6e1bf03a"><p>Eine klare Modulstruktur und Docker-Containerisierung erleichtern die Entwicklung, das Testing und den Rollout enorm.</p></li><li data-uuid="f079cea5-a686-48e1-a0af-47cc837c2d59"><p>Das sessionbasierte Datenmodell ist für praxisnahe Vergleiche und Auswertungen viel flexibler als eine rein laufende Messwertsammlung.</p></li><li data-uuid="a878d2bf-c621-46cb-ab40-b5fd797f3cb8"><p>Durch die konsequente Nutzung von Versionskontrolle (Git), virtuellen Umgebungen (venv) und Tests (pytest) bleibt das Projekt auch bei mehreren Teammitgliedern jederzeit nachvollziehbar und wartbar.</p></li></ul><hr /><p><strong>Mit diesen Erweiterungsoptionen bleibt das System langfristig attraktiv, ausbaufähig und zukunftssicher!</strong><br />Alle vorgeschlagenen Features lassen sich durch die offene Architektur nachträglich und schrittweise integrieren.</p><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

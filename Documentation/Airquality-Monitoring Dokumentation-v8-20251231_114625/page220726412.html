@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox" checked/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span>Device Steuerung durch WLAN-Steckdosen - SK</span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox"/><ul><li><span><a href="page220727126.html">Containerisierung mit Docker Compose - PP</a></span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark57'>Device Steuerung durch WLAN-Steckdosen - SK</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark58"></a><h1 id="Bookmark58">Ziel</h1><p>Das Ziel ist es, Geräte basierend auf der aktuellen Luftqualität automatisch zu steuern. Dazu haben wir einen Ventilator und einen Aroma Diffusor bzw Luftbefeuchtiger, die je über eine WLAN-Steckdose gesteuert werden können.</p><a name="Bookmark59"></a><h1 id="Bookmark59">Umsetzung</h1><a name="Bookmark60"></a><h3 id="Bookmark60">Python Library</h3><p>Die WLAN-Steckdosen sind das Modell TP-Link Tapo P100. Für diese gibt es einige Python Libraries, die man in Betracht ziehen kann, wie z.B. PyP100, pytapo. Allerdings funktionierte die Standardinstallation per pip zum Zeitpunkt der Implementierung nicht, da unsere Steckdosen bereits die Firmware-Version 1.2.5 mit neuer Authentifizierungsmethode verwendeten – welche von den offiziellen Libraries noch nicht unterstützt wurde. Dieses Fork von <code>PyP100</code> hat schließlich zum Erfolg geführt: <a class="external-link" href="https://github.com/almottier/TapoP100" rel="nofollow">https://github.com/almottier/TapoP100</a></p><a name="Bookmark61"></a><h3 id="Bookmark61">tp100_controller.py (WLAN-Steckdosen Controller)</h3><p>Dieses Modul stellt eine Python Klasse <code>TP100Controller</code> zur Verfügung, mit der eine P100 WLAN-Steckdose gesteuert werden kann. </p><p>Dazu kann man sich mit dem Gerät mithilfe der Tapo App Anmeldedaten verbinden, das Gerät ein- und ausschalten und den Status abfragen, ob das Gerät eingeschaltet ist.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: python; gutter: false">from PyP100 import PyP100
+
+# Daten aus Tapo App
+TP100_IP = &quot;&quot;
+TAPO_EMAIL = &quot;&quot;
+TAPO_PASSWORD = &quot;&quot;
+
+class TP100Controller:
+    def __init__(self, ip, email, password):
+        self.p100 = PyP100.P100(ip, email, password)
+        self._login()
+
+    def _login(self):
+        try:
+            self.p100.handshake()
+            self.p100.login()
+        except Exception as e:
+            raise RuntimeError(f&quot;Verbindung fehlgeschlagen: {e}&quot;)
+
+    def turn_on(self):
+        self.p100.turnOn()
+
+    def turn_off(self):
+        self.p100.turnOff()
+
+    def get_status(self):
+        info = self.p100.getDeviceInfo()
+        return &quot;on&quot; if info.get('device_on', False) else &quot;off&quot;
+
+    def get_name(self):
+        return self.p100.getDeviceName()
+</pre>
+</div></div><a name="Bookmark62"></a><h3 id="Bookmark62">air_control_rules.py (Regeln zur Steuerung)</h3><p>In diesem Modul sind Regeln definiert, wann der Ventilator und der Diffusor an und aus sein sollte. Dazu wurden wieder die Messwerte (<em>measurements</em>), die auch für das Air Quality Rating verwendet werden, jedoch ohne Temperatur, da dieser Faktor nicht durch unsere Geräte steuerbar ist, benutzt.   </p><p>Es gibt für jedes Gerät zwei Methoden.</p><a name="Bookmark63"></a><h4 id="Bookmark63">Ventilator</h4><p><span style="color:var(--ds-text,#172b4d);">Die Methode needs_ventilation beschreibt, wann der Ventilator eingeschaltet sein sollte. Das ist der Fall, wenn mindestens einer der vier Werte (PM2.5, CO2eq, VOCAQI, HUMID) mit <em>schlecht </em>oder <em>sehr schlecht</em> bewertet ist. Wenn der SessionType <em>OUTDOOR </em>ist, aktiviert sich der Ventilator nicht, weil eine aktive Lüftung im Außenbereich keinen Einfluss auf die Umgebungsluft hat. Auch erwähnt sollte sein, dass ein Ventilator an sich die Luftqualität nicht verbessert, da er im Grunde nur die Luft umwirbelt. Der Gedanke hier ist, dass man den Ventilator mit lüften verbindet, um frische Luft schneller in den Raum zu bringen.</span></p><p><span style="color:var(--ds-text,#172b4d);">ventilation_not_needed schaltet den Ventilator aus, wenn alle vier Werte <em>sehr gut</em> oder <em>gut </em>sind. Eine <em>mäßige </em>Bewertung wurde bewusst in beiden Methoden nicht beachtet, da dies keinen zwingenden Handlungsbedarf erfordert und  um ein häufiges Umschalten des Ventilators zu vermeiden.</span></p><a name="Bookmark64"></a><h4 id="Bookmark64">Diffusor</h4><p><span style="color:var(--ds-text,#172b4d);">Aus demselben Grund wie beim Ventilator wird der Diffusor bei Outdoor-Sessions nicht geschaltet. </span><span style="color:var(--ds-text,#172b4d);">Bei normaler Nutzung eines Aroma Diffusors (wenn man mehr als nur Wasser benutzt) sollte man vorsichtig sein, da dieser die Luftqualität sogar verschlechtern kann. </span></p><p><span style="color:var(--ds-text,#172b4d);">Darauf wurde in der Steuerung geachtet und deswegen ist die Vorraussetzung für die Aktivierung des Aroma Diffusor, dass</span> die Luftqualität an sich gut ist, d.h. wenn PM2.5 schlechtestens <em>mäßig </em>ist und VOCAQI schlechtestens <em>gut </em>ist, damit der Aroma Diffusor keine Belastung ist. Wenn diese Vorraussetzung erfüllt ist und die Luft zu trocken ist (&lt; 30% Luftfeuchtigkeit), dann gibt <span style="color:var(--ds-text,#172b4d);">diffusor_should_be_on <em>True </em>zurück.</span></p><p>Wenn also die Luftfeuchtigkeit <em>sehr gut</em> ist oder VOCAQI oder PM2.5 <em>schlecht </em>bis<em> sehr schlecht</em> ist, wird der Aroma Diffusor deaktiviert.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>

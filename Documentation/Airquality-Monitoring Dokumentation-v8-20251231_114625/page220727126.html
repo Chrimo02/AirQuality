@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- 6.6.0-GA -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="combined.css"/>
+    <link rel="stylesheet" href="custom.css"/>
+    <script src="split/split.min.js"></script>
+    <link rel="stylesheet" href="inline_styles.css"/>
+</head>
+<body>
+
+<div class="full-height-container">
+<div id="sidebar" class="split">
+<div class="navgroup" id="search">
+<form action="search.html" class="aui">
+<input type="text" name="q" id="tipue_search_input" class="medium-field text">
+<input class="button submit" type="submit" value="Search"></form>
+</div>
+<div class="navgroup" id="navigation">
+<ul><li><span><a href="page217219154.html">Airquality-Monitoring Dokumentation</a></span><input type="checkbox" checked/><ul><li><span><a href="page217219159.html">Motivation und Zielsetzung - CM</a></span></li><li><span><a href="page217219223.html">Gesamtübersicht / Architektur - CM</a></span></li><li><span><a href="page220726905.html">Backend</a></span><input type="checkbox"/><ul><li><span><a href="page220725876.html">Raspberry Pi Einrichtung & Remote-Workflow - PP</a></span></li><li><span><a href="page220726812.html">API - SK</a></span></li><li><span><a href="page220726055.html">Session-Management im Code - PP</a></span></li><li><span><a href="page220725964.html">Datenbank-Design & Implementierung - PP</a></span></li><li><span><a href="page220726412.html">Device Steuerung durch WLAN-Steckdosen - SK</a></span></li><li><span><a href="page220726244.html">Testing & Qualitätssicherung - PP</a></span></li><li><span><a href="page220726406.html">Air Quality Rating - SK</a></span></li><li><span><a href="page220726790.html">Luftsensor auslesen - SK</a></span></li></ul></li><li><span><a href="page220726796.html">Frontend - MK</a></span></li><li><span><a href="page217219169.html">LED-Ampel & MQTT - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219171.html">Vorbereitung und Hardware - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219256.html">MQTT-Setup Troubleshooting - CM</a></span></li></ul></li><li><span><a href="page217219173.html">PlatformIO als Build-Tool - CM</a></span></li><li><span><a href="page217219175.html">Code für den ESP32 - CM</a></span><input type="checkbox"/><ul><li><span><a href="page217219233.html">Übersicht der Code-Komponenten - CM</a></span></li><li><span><a href="page217219235.html">Wichtige Code-Bestandteile im Detail - CM</a></span></li></ul></li><li><span><a href="page220725555.html">Teststrategie und Testausführung - CM</a></span></li><li><span><a href="page220726397.html">MQTT-Publishing vom Raspberry Pi - CM</a></span></li></ul></li><li><span><a href="page220726902.html">Sonstiges</a></span><input type="checkbox"/><ul><li><span><a href="page220725907.html">Versionsverwaltung & Projektstruktur - PP</a></span></li><li><span><a href="page220726928.html">Das Team</a></span></li></ul></li><li><span><a href="page220727119.html">Deployment</a></span><input type="checkbox" checked/><ul><li><span>Containerisierung mit Docker Compose - PP</span></li><li><span><a href="page220727123.html">Dockerfile Backend - CM</a></span></li><li><span><a href="page220727121.html">Dockerfile Frontend - CM</a></span></li></ul></li><li><span><a href="page220727144.html">Abschluss und Erweiterungspotenzial - PP</a></span></li></ul></li></ul>
+</div>
+</div>
+<div id="content" class="split">
+<div class='wiki-page'>
+<div class='wiki-title'>
+<h1 class='page-title-lvl-cover' id='Bookmark172'>Containerisierung mit Docker Compose - PP</h1>
+</div>
+<div class='wiki-content'>
+<a name="Bookmark173"></a><h3 id="Bookmark173"><strong>1. Übersicht</strong></h3><p>Das gesamte System läuft als Docker-Compose-Stack und besteht aus folgenden Komponenten:</p><ul><li data-uuid="143d1d0a-2476-4a01-9229-a093075e726b"><p><strong>Backend (API):</strong><br />FastAPI (Python), Zugriff auf den Luftqualitätssensor via USB.</p></li><li data-uuid="d364b162-5841-477b-83d0-b7d7d6c36e7e"><p><strong>Frontend:</strong><br />Modernes SPA-Framework (z. B. Vite/React/Vue), Build-Argumente erlauben flexible API-URL.</p></li><li data-uuid="16617204-0c65-4854-9600-9383b86ea57d"><p><strong>SQLite-Datenbank:</strong><br />Persistente Speicherung im lokalen Host-Ordner, unabhängig von Containern.</p></li></ul><hr /><a name="Bookmark174"></a><h3 id="Bookmark174"><strong>2. docker-compose.yml (finales Setup)</strong></h3><p></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: docker; gutter: false">version: &quot;3.9&quot;
+services:
+  api:
+    build:
+      context: .
+      dockerfile: DOCKERFILE.backend
+    container_name: airquality-api
+    ports:
+      - &quot;8000:8000&quot;
+    volumes:
+      - ./database:/app/database      # SQLite-DB bleibt erhalten!
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    devices:
+      - &quot;dev/ttyUSB0:/dev/ttyUSB0&quot;
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: DOCKERFILE.frontend
+      args:
+        VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
+        VITE_API_URL:   ${VITE_API_URL:-http://172.20.10.4:8000}
+    container_name: airquality-frontend
+
+    ports:
+      - '3000:80'
+    restart: unless-stopped
+    depends_on: 
+      - api
+
+    environment:
+      - VITE_USE_MOCK=${VITE_USE_MOCK:-false}
+      - VITE_API_URL=${VITE_API_URL:-http://172.20.10.4:8000}</pre>
+</div></div><p></p><hr /><a name="Bookmark175"></a><h3 id="Bookmark175"><strong>3. Erläuterungen zu den wichtigsten Optionen</strong></h3><p><strong>api-Service:</strong></p><ul><li data-uuid="4724d203-9ca3-4688-bb04-f5cf915887a6"><p><strong>devices:</strong><br /><code>/dev/ttyUSB0</code> wird in den Container gemountet, damit der Sensor auch im Container direkt angesprochen werden kann.</p></li><li data-uuid="81edff39-d148-40da-a9b0-474fd916c267"><p><strong>volumes:</strong><br />Das lokale Verzeichnis <code>./database</code> speichert die SQLite-Datenbank persistent und unabhängig vom Container-Lebenszyklus.</p></li><li data-uuid="a595e408-dccc-476d-b6a4-fdb2e238266a"><p><strong>ports/environment/restart:</strong><br />Die API läuft auf Port 8000. Bei Fehlern/Neustarts wird der Container automatisch wieder gestartet.</p></li></ul><p><strong>frontend-Service:</strong></p><ul><li data-uuid="be6e01ec-79dc-4f83-9bc9-e553288a7673"><p><strong>build/context/dockerfile:</strong><br />Baut das Frontend aus dem <code>../frontend</code>-Verzeichnis mit dem angegebenen Dockerfile.</p></li><li data-uuid="bddbcb55-ded2-4629-b48e-33a5c380c6fd"><p><strong>args/environment:</strong><br />Die Variable <code>VITE_API_URL</code> verweist <strong>fest auf die interne API-IP</strong> (<code><a class="external-link" href="http://172.20.10.4:8000" rel="nofollow">http://172.20.10.4:8000</a></code>).<br />Damit ist die API von allen Geräten im selben Netzwerk aus erreichbar – wichtig für echte Mehrgeräte-Umgebungen!</p></li><li data-uuid="eb3df40a-d355-41e2-b678-abf474e085e4"><p><strong>depends_on:</strong><br />Das Frontend wird erst gestartet, wenn die API verfügbar ist.</p></li></ul><hr /><a name="Bookmark176"></a><h3 id="Bookmark176"><strong>4. Start und Nutzung</strong></h3><p><strong>Stack starten:</strong></p><p></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: docker; gutter: false">docker-compose up --build</pre>
+</div></div><p></p><ul><li data-uuid="7d5f6bc4-161a-44a6-88bd-a9861afba191"><p><strong>API erreichbar:</strong><br /><a class="external-link" href="http://172.20.10.4:8000/" rel="nofollow">http://172.20.10.4:8000</a></p></li><li data-uuid="119ba305-5303-4c41-94ec-8ff59ac39812"><p><strong>Frontend erreichbar:</strong><br /><a class="external-link" href="http://localhost:3000/" rel="nofollow">http://localhost:3000</a> (bei Zugriff auf dem Host)</p></li></ul><hr /><a name="Bookmark177"></a><h3 id="Bookmark177"><strong>5. Besonderheiten und Tipps</strong></h3><ul><li data-uuid="0aa12f7b-9097-4e9f-846d-1ed75e333e76"><p>Die feste API-URL (<code>VITE_API_URL</code>) sorgt dafür, dass das Frontend im Container immer die richtige Adresse für das Backend kennt – sowohl im lokalen Netzwerk als auch für mobile/weitere Geräte.</p></li><li data-uuid="0df9e26a-e6a9-430d-8c59-57d9e7c06dc8"><p>Der USB-Sensor funktioniert im Container, da <code>/dev/ttyUSB0</code> direkt eingebunden wird.</p></li><li data-uuid="f3853563-fd32-43a5-b455-23fddcd5c8de"><p>Die Datenbank bleibt immer im lokalen Ordner und ist somit leicht für Backups oder externe Analysen zugänglich.</p></li></ul><p><br /></p><p><br /></p>
+</div>
+</div>
+</div>
+</div>
+<script>
+Split(['#sidebar', '#content'], {
+    sizes: [15, 85],
+    minSize: 100
+});
+</script>
+
+</body>
+</html>
